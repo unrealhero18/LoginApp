@@ -15,8 +15,8 @@ export const Spacing = {
   buttonHeight: 48,
   inputHeight: 48,
   floatingInputHeight: 53,
-  inputLabelFloatTop: 8,
-  inputLabelRestTop: 18,
+  inputLabelFloatTop: 4,
+  inputLabelRestTop: 16,
 
   // Border Radii
   radius: {
