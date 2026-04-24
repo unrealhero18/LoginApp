@@ -13,11 +13,11 @@ const LABEL_REST_TOP = Spacing.inputLabelRestTop;
 
 const AnimatedAppText = Animated.createAnimatedComponent(AppText);
 
-interface Props {
+type Props = {
   label: string;
   labelAnim: Animated.Value;
   style?: StyleProp<TextStyle>;
-}
+};
 
 export const InputLabel: React.FC<Props> = ({ label, labelAnim, style }) => {
   const labelTop = labelAnim.interpolate({

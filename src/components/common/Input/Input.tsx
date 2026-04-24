@@ -12,8 +12,9 @@ import {
   View,
 } from 'react-native';
 
-import { Timing } from '@/theme';
 import { logger } from '@/utils/logger';
+
+import { Timing } from '@/theme';
 
 import { styles } from './Input.styles';
 import { InputClearButton } from './InputClearButton';
@@ -52,7 +53,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     const hasError = Boolean(errorMessage);
     const shouldFloat = isFocused || value.length > 0;
-    const showClear = !hasError && value.length > 0;
+    const showClear = !hasError && value.length > 0 && Boolean(onClear);
 
     useEffect(() => {
       Animated.timing(labelAnim, {
@@ -124,7 +125,7 @@ export const Input = forwardRef<TextInput, InputProps>(
           )}
         </View>
 
-        {hasError && errorMessage && (
+        {errorMessage && (
           <InputError message={errorMessage} testID={testID} />
         )}
       </View>

@@ -1,6 +1,3 @@
-/**
- * Simple logger utility that only logs in development mode.
- */
 export const logger = {
   debug: (message: string, ...args: unknown[]) => {
     if (__DEV__) {
@@ -8,9 +5,7 @@ export const logger = {
     }
   },
   error: (message: string, ...args: unknown[]) => {
-    if (__DEV__) {
-      console.error(message, ...args);
-    }
+    console.error(message, ...args);
   },
   warn: (message: string, ...args: unknown[]) => {
     if (__DEV__) {
