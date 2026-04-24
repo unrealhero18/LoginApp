@@ -1,9 +1,10 @@
 import React from 'react';
+
 import { StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import { AppText } from '@/components/AppText';
-import { ButtonBase } from '@/components/Button/ButtonBase';
+import { AppText } from '@/components/common/AppText';
+import { ButtonBase } from '@/components/common/Button/ButtonBase';
 
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';

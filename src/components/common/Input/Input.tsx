@@ -4,6 +4,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+
 import {
   Animated,
   TextInput,
@@ -11,13 +12,13 @@ import {
   View,
 } from 'react-native';
 
-import { Colors, Timing } from '@/theme';
+import { Timing } from '@/theme';
 import { logger } from '@/utils/logger';
 
+import { styles } from './Input.styles';
 import { InputClearButton } from './InputClearButton';
 import { InputError } from './InputError';
 import { InputLabel } from './InputLabel';
-import { styles } from './Input.styles';
 
 export type InputProps = Omit<TextInputProps, 'value' | 'onChangeText'> & {
   value: string;
@@ -67,17 +68,15 @@ export const Input = forwardRef<TextInput, InputProps>(
       }
     }, [hasError, errorMessage, label]);
 
-    const borderColor = hasError
-      ? Colors.danger
-      : shouldFloat
-        ? Colors.primary
-        : Colors.borderInput;
+    const containerStyle = [
+      styles.container,
+      hasError ? styles.containerError : shouldFloat && styles.containerFocused,
+    ];
 
-    const labelColor = hasError
-      ? Colors.danger
-      : shouldFloat
-        ? Colors.primary
-        : Colors.textSecondary;
+    const labelStyle = [
+      styles.label,
+      hasError ? styles.labelError : shouldFloat && styles.labelFocused,
+    ];
 
     const handleFocus: TextInputProps['onFocus'] = (e) => {
       logger.debug('[Input] focus', { label });
@@ -98,11 +97,11 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     return (
       <View style={style} testID={testID}>
-        <View style={[styles.container, { borderColor }]}>
+        <View style={containerStyle}>
           <InputLabel
             label={label}
             labelAnim={labelAnim}
-            color={labelColor}
+            style={labelStyle}
           />
 
           <TextInput

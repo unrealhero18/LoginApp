@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppText } from '@/components/AppText';
+import { AppText } from '@/components/common/AppText';
 
 import { styles } from './Input.styles';
 

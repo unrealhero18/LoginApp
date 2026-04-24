@@ -14,7 +14,7 @@ export const Spacing = {
   // Component metrics
   buttonHeight: 48,
   inputHeight: 48,
-  floatingInputHeight: 53,
+  floatingInputHeight: 53, // Derived from Figma design spec
   inputLabelFloatTop: 4,
   inputLabelRestTop: 16,
 

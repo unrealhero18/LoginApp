@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Pressable } from 'react-native';
 
 import CloseIcon from '@/assets/icons/close.svg';

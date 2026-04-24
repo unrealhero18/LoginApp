@@ -1,10 +1,12 @@
 import React from 'react';
+
 import { StyleSheet } from 'react-native';
 
-import { AppText } from '@/components/AppText';
+import { AppText } from '@/components/common/AppText';
+import { ButtonBase } from '@/components/common/Button/ButtonBase';
+
 import { Colors } from '@/theme/colors';
 import { Typography } from '@/theme/typography';
-import { ButtonBase } from '@/components/Button/ButtonBase';
 
 type Props = {
   title: string;

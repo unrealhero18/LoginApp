@@ -1,11 +1,12 @@
 import React from 'react';
-import { Animated } from 'react-native';
 
-import { AppText } from '@/components/AppText';
+import { Animated, StyleProp, TextStyle } from 'react-native';
+
+import { AppText } from '@/components/common/AppText';
+
 import { Spacing } from '@/theme/spacing';
 import { Typography } from '@/theme/typography';
 
-import { styles } from './Input.styles';
 
 const LABEL_FLOAT_TOP = Spacing.inputLabelFloatTop;
 const LABEL_REST_TOP = Spacing.inputLabelRestTop;
@@ -15,10 +16,10 @@ const AnimatedAppText = Animated.createAnimatedComponent(AppText);
 interface Props {
   label: string;
   labelAnim: Animated.Value;
-  color: string;
+  style?: StyleProp<TextStyle>;
 }
 
-export const InputLabel: React.FC<Props> = ({ label, labelAnim, color }) => {
+export const InputLabel: React.FC<Props> = ({ label, labelAnim, style }) => {
   const labelTop = labelAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [LABEL_REST_TOP, LABEL_FLOAT_TOP],
@@ -32,11 +33,10 @@ export const InputLabel: React.FC<Props> = ({ label, labelAnim, color }) => {
   return (
     <AnimatedAppText
       style={[
-        styles.label,
+        style,
         {
           top: labelTop,
           fontSize: labelFontSize,
-          color,
         },
       ]}
       numberOfLines={1}

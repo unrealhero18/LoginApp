@@ -13,11 +13,25 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     justifyContent: 'flex-end',
     paddingBottom: Spacing.sm,
+    borderColor: Colors.borderInput,
+  },
+  containerFocused: {
+    borderColor: Colors.primary,
+  },
+  containerError: {
+    borderColor: Colors.danger,
   },
   label: {
     position: 'absolute',
     left: Spacing.md,
     includeFontPadding: false,
+    color: Colors.textSecondary,
+  },
+  labelFocused: {
+    color: Colors.primary,
+  },
+  labelError: {
+    color: Colors.danger,
   },
   input: {
     fontSize: Typography.size.md,
