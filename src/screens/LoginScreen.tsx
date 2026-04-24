@@ -1,10 +1,10 @@
 import React from 'react';
 
-import { StyleSheet, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/AppText';
-import { PrimaryButton } from '@/components/Button';
+import { AppText } from '@/components/common/AppText';
+import { PrimaryButton } from '@/components/common/Button';
 import { Routes } from '@/constants/routes';
 import { RootStackParamList } from '@/navigation/RootNavigator';
 

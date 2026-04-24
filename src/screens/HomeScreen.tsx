@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { StyleSheet, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StyleSheet, View } from 'react-native';
 
-import { PrimaryButton } from '@/components/Button';
+import { PrimaryButton } from '@/components/common/Button';
 import { Routes } from '@/constants/routes';
 import { RootStackParamList } from '@/navigation/RootNavigator';
 

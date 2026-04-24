@@ -1,6 +1,6 @@
 import { View, Pressable } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
-import { ButtonBase } from '@/components/Button/ButtonBase';
+import { ButtonBase } from '@/components/common/Button/ButtonBase';
 
 describe('ButtonBase', () => {
   it('renders correctly', async () => {
@@ -14,7 +14,7 @@ describe('ButtonBase', () => {
   });
 
   it('renders children', async () => {
-    let component: any;
+    let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
         <ButtonBase>
@@ -22,13 +22,13 @@ describe('ButtonBase', () => {
         </ButtonBase>
       );
     });
-    const root = component.root;
+    const root = component!.root;
     expect(root.findByProps({ testID: 'child' })).toBeDefined();
   });
 
   it('handles onPress', async () => {
     const onPressMock = jest.fn();
-    let component: any;
+    let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
         <ButtonBase onPress={onPressMock}>
@@ -36,14 +36,14 @@ describe('ButtonBase', () => {
         </ButtonBase>
       );
     });
-    const root = component.root;
+    const root = component!.root;
     const pressable = root.findByProps({ onPress: onPressMock });
     pressable.props.onPress();
     expect(onPressMock).toHaveBeenCalled();
   });
 
   it('respects disabled prop', async () => {
-    let component: any;
+    let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
         <ButtonBase disabled={true}>
@@ -51,7 +51,7 @@ describe('ButtonBase', () => {
         </ButtonBase>
       );
     });
-    const root = component.root;
+    const root = component!.root;
     const pressable = root.findByProps({ disabled: true });
     expect(pressable.props.disabled).toBe(true);
   });
