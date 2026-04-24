@@ -4,7 +4,12 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 
 ## Language & Types
 
-- TypeScript strict mode is on — no `any`, no `@ts-ignore` without an explanatory comment.
+- **NO `any` POLICY**: The use of `any` is strictly forbidden across the entire codebase. 
+  - Use proper TypeScript types, generics, or `unknown` (with type guards) instead.
+  - For React Native styles, use `StyleProp<ViewStyle | TextStyle | ImageStyle>`.
+  - For events, use specific types like `NativeSyntheticEvent<TextInputFocusEventData>`.
+- TypeScript strict mode is on.
+- No `@ts-ignore` or `@ts-expect-error` without a compelling reason and a detailed explanatory comment.
 - Prefer `type` over `interface` for object shapes; use `interface` only when extension is intentional.
 - Export types from `src/types/` when shared across more than one file.
 - All async functions must have explicit return types.
