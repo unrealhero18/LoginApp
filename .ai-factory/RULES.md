@@ -59,7 +59,8 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 
 - `StyleSheet.create` is the only permitted way to define static styles.
 - Global/shared styles live in `src/theme/styles.ts`.
-- Color values and spacing constants belong in `src/theme/` — no magic numbers in component files.
+- All colors must be imported from `src/theme/colors.ts` — raw hex strings (e.g. `'#338BFF'`) are forbidden in component and screen files.
+- Spacing, font sizes, border radii, and other numeric design tokens belong in `src/theme/` — no magic numbers in component files.
 - Dark mode support via `useColorScheme` and React Navigation theme tokens.
 
 ## Testing

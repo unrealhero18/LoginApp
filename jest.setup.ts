@@ -33,3 +33,10 @@ jest.mock('react-native-safe-area-context', () => {
     initialWindowMetrics: { insets, frame },
   };
 });
+
+jest.mock('react-native-linear-gradient', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock: gradient props unavailable without full package types
+  return (props: any) => React.createElement(View, props, props.children);
+});

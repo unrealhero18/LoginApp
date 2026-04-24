@@ -1,0 +1,63 @@
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+
+import { AppText } from '@/components/AppText';
+import { ButtonBase } from '@/components/Button/ButtonBase';
+
+import { Colors } from '@/theme/colors';
+import { Spacing } from '@/theme/spacing';
+import { Typography } from '@/theme/typography';
+
+type Props = {
+  title: string;
+  disabled?: boolean;
+  onPress?: () => void;
+};
+
+export function PrimaryButton({ title, disabled = false, onPress }: Props) {
+  return (
+    <ButtonBase
+      disabled={disabled}
+      onPress={onPress}
+      style={styles.shadow}
+    >
+      <LinearGradient
+        colors={[Colors.BLUE_LIGHT, Colors.BLUE]}
+        locations={[0.0757, 0.9243]}
+        start={{ x: 1, y: 0.4 }}
+        end={{ x: 0, y: 0.6 }}
+        style={styles.gradient}
+      >
+        <AppText fontWeight="500" style={styles.label}>
+          {title}
+        </AppText>
+      </LinearGradient>
+    </ButtonBase>
+  );
+}
+
+const styles = StyleSheet.create({
+  shadow: {
+    shadowColor: Colors.BLUE,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  gradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Spacing.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.BLUE,
+  },
+  label: {
+    fontSize: Typography.size.md,
+    lineHeight: Typography.size.md * Typography.lineHeight.normal,
+    letterSpacing: 0,
+    textAlign: 'center',
+    color: Colors.WHITE,
+  },
+});
