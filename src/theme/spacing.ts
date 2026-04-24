@@ -14,6 +14,7 @@ export const Spacing = {
   // Component metrics
   buttonHeight: 48,
   inputHeight: 48,
+  floatingInputHeight: 53,
 
   // Border Radii
   radius: {
