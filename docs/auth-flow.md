@@ -1,3 +1,5 @@
+[← Getting Started](getting-started.md) · [Back to README](../README.md)
+
 # Authentication Flow
 
 LoginApp's authentication is built on the [DummyJSON Auth API](https://dummyjson.com/docs/auth). The flow is layered: a typed HTTP client at the bottom, a service that calls it, an `AuthProvider` that owns auth state, and a `RootNavigator` that switches between an authenticated and unauthenticated stack based on that state.
@@ -146,8 +148,6 @@ Coverage:
 - Token refresh (`refreshToken` flow) — see `.ai-factory/ROADMAP.md` "Out of scope".
 - OAuth, edit profile, push notifications, offline mode.
 
-## See also
+## See Also
 
-- `.ai-factory/ROADMAP.md` — Phase 2 milestone.
-- `.ai-factory/ARCHITECTURE.md` — layered (screen-centric) architecture.
-- `.ai-factory/RULES.md` — coding rules (no `any`, `@/` alias, `StyleSheet.create`, no `AsyncStorage` for tokens).
+- [Getting Started](getting-started.md) — prerequisites, install, running the app and tests
