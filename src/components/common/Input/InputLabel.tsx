@@ -1,25 +1,41 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { Animated, StyleProp, TextStyle } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 
-import { Spacing } from '@/theme/spacing';
-import { Typography } from '@/theme/typography';
+import { Spacing, Timing, Typography } from '@/theme';
 
 
 const LABEL_FLOAT_TOP = Spacing.inputLabelFloatTop;
 const LABEL_REST_TOP = Spacing.inputLabelRestTop;
+const ANIMATION_DURATION = Timing.quick;
 
 const AnimatedAppText = Animated.createAnimatedComponent(AppText);
 
 type Props = {
   label: string;
-  labelAnim: Animated.Value;
+  shouldFloat: boolean;
   style?: StyleProp<TextStyle>;
 };
 
-export const InputLabel: React.FC<Props> = ({ label, labelAnim, style }) => {
+export const InputLabel: React.FC<Props> = ({ label, shouldFloat, style }) => {
+  const labelAnim = useRef(new Animated.Value(shouldFloat ? 1 : 0)).current;
+
+  useEffect(() => {
+    const animation = Animated.timing(labelAnim, {
+      toValue: shouldFloat ? 1 : 0,
+      duration: ANIMATION_DURATION,
+      useNativeDriver: false,
+    });
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [shouldFloat, labelAnim]);
+
   const labelTop = labelAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [LABEL_REST_TOP, LABEL_FLOAT_TOP],

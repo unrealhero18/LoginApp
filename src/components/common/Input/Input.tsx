@@ -1,20 +1,16 @@
 import React, {
   forwardRef,
   useEffect,
-  useRef,
   useState,
 } from 'react';
 
 import {
-  Animated,
   TextInput,
   TextInputProps,
   View,
 } from 'react-native';
 
 import { logger } from '@/utils/logger';
-
-import { Timing } from '@/theme';
 
 import { styles } from './Input.styles';
 import { InputClearButton } from './InputClearButton';
@@ -29,8 +25,6 @@ export type InputProps = Omit<TextInputProps, 'value' | 'onChangeText'> & {
   onClear?: () => void;
   testID?: string;
 };
-
-const ANIMATION_DURATION = Timing.quick;
 
 export const Input = forwardRef<TextInput, InputProps>(
   (
@@ -49,19 +43,10 @@ export const Input = forwardRef<TextInput, InputProps>(
     ref,
   ) => {
     const [isFocused, setIsFocused] = useState(false);
-    const labelAnim = useRef(new Animated.Value(value.length > 0 ? 1 : 0)).current;
 
     const hasError = Boolean(errorMessage);
     const shouldFloat = isFocused || value.length > 0;
     const showClear = !hasError && value.length > 0 && Boolean(onClear);
-
-    useEffect(() => {
-      Animated.timing(labelAnim, {
-        toValue: shouldFloat ? 1 : 0,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: false,
-      }).start();
-    }, [shouldFloat, labelAnim]);
 
     useEffect(() => {
       if (hasError) {
@@ -101,7 +86,7 @@ export const Input = forwardRef<TextInput, InputProps>(
         <View style={containerStyle}>
           <InputLabel
             label={label}
-            labelAnim={labelAnim}
+            shouldFloat={shouldFloat}
             style={labelStyle}
           />
 

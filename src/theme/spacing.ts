@@ -16,7 +16,7 @@ export const Spacing = {
   inputHeight: 48,
   floatingInputHeight: 53, // Derived from Figma design spec
   inputLabelFloatTop: 4,
-  inputLabelRestTop: 16,
+  inputLabelRestTop: 14,
 
   // Border Radii
   radius: {
