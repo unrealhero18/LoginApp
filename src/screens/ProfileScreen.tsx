@@ -5,6 +5,8 @@ import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
+import { ErrorMessage } from '@/components/common/ErrorMessage';
+import { ErrorMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -19,14 +21,30 @@ const AVATAR_SIZE = 96;
 
 export default function ProfileScreen(_: Props) {
   const { logout } = useAuth();
-  const { data, isLoading } = useProfile();
+  const { data, isError, isFetching, isLoading, refetch } = useProfile();
 
-  if (isLoading || !data) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator color={Colors.primary} />
-      </View>
-    );
+  if (!data) {
+    // `isFetching` is checked before `isError` so a Retry-triggered refetch
+    // shows a spinner instead of leaving the user on the error screen with no
+    // visual feedback (TanStack keeps `isError` true until the refetch settles).
+    if (isFetching || isLoading) {
+      return (
+        <View style={styles.container}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      );
+    }
+
+    if (isError) {
+      return (
+        <View style={styles.container}>
+          <ErrorMessage message={ErrorMessages.PROFILE_FAILURE} testID="profile-error" />
+          <PrimaryButton title="Retry" onPress={() => refetch()} />
+        </View>
+      );
+    }
+
+    return null;
   }
 
   return (
@@ -39,7 +57,7 @@ export default function ProfileScreen(_: Props) {
       <AppText style={styles.meta}>{data.email}</AppText>
 
       <View style={styles.actions}>
-        <PrimaryButton title="Logout" onPress={() => void logout()} />
+        <PrimaryButton title="Logout" onPress={() => logout()} />
       </View>
     </View>
   );

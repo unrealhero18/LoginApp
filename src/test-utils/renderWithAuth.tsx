@@ -17,9 +17,9 @@ type WrapperOptions = {
 
 export function renderWithAuth(
   ui: React.ReactElement,
-  { queryClient, ...renderOptions }: WrapperOptions & Omit<RenderOptions, 'wrapper'> = {},
+  { queryClient: customQueryClient, ...renderOptions }: WrapperOptions & Omit<RenderOptions, 'wrapper'> = {},
 ): RenderAPI & { queryClient: QueryClient } {
-  const client = queryClient ?? createTestQueryClient();
+  const client = customQueryClient ?? createTestQueryClient();
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>

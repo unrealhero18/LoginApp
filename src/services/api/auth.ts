@@ -10,9 +10,12 @@ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
  * @throws {ApiError} If the login request fails.
  */
 export async function login(payload: LoginPayload): Promise<AuthToken> {
+  // A 401 here means "wrong credentials", not "session expired" — opt out of
+  // the global unauthorized handler so a failed login does not trigger logout.
   return apiFetch<AuthToken>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
+    skipAuthHandler: true,
   });
 }
 

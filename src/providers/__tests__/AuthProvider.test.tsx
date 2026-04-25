@@ -167,4 +167,55 @@ describe('AuthProvider', () => {
     const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
     expect(typeof handler).toBe('function');
   });
+
+  it('unauthorized handler stays armed across consecutive incidents', async () => {
+    // Regression: previously the `pending` flag was never reset, so the
+    // handler triggered logout exactly once per app lifetime. Subsequent
+    // 401/403 responses (e.g. after a real session expiry following a failed
+    // login) were silently dropped.
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isHydrating).toBe(false));
+    await waitFor(() => expect(mockedClient.setOnUnauthorized).toHaveBeenCalled());
+
+    const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
+    if (!handler) {
+      throw new Error('expected unauthorized handler to be registered');
+    }
+
+    await act(async () => {
+      handler();
+    });
+    await waitFor(() =>
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalledTimes(1),
+    );
+
+    await act(async () => {
+      handler();
+    });
+    await waitFor(() =>
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalledTimes(2),
+    );
+  });
+
+  it('unauthorized handler deduplicates concurrent invocations within an incident', async () => {
+    // Two synchronous calls during the same in-flight logout should result in
+    // a single logout — guards against races where queryCache.onError and
+    // apiFetch both fire for the same response.
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isHydrating).toBe(false));
+    await waitFor(() => expect(mockedClient.setOnUnauthorized).toHaveBeenCalled());
+
+    const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
+    if (!handler) {
+      throw new Error('expected unauthorized handler to be registered');
+    }
+
+    await act(async () => {
+      handler();
+      handler();
+    });
+    await waitFor(() =>
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalledTimes(1),
+    );
+  });
 });

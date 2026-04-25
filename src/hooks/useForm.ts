@@ -7,20 +7,24 @@ type UseFormOptions<T> = {
   validate?: (values: T) => boolean;
 };
 
+type UseFormReturn<T> = {
+  values: T;
+  handleChange: <K extends keyof T>(name: K) => (value: T[K]) => void;
+  handleSubmit: () => void;
+  isValid: boolean;
+};
+
 /**
- * A reusable hook for managing form state and submission.
- * 
- * @param initialValues - The initial values for the form fields.
- * @param onSubmit - Callback function called when the form is submitted.
- * @param onValueChange - Optional callback called whenever any field value changes.
- * @param validate - Optional function to validate the form values.
+ * Minimal form-state hook covering controlled inputs, change notification, and
+ * a synchronous validity flag. Intentionally narrow — extend only when a
+ * second consumer demands it.
  */
 export function useForm<T extends Record<string, unknown>>({
   initialValues,
   onSubmit,
   onValueChange,
   validate,
-}: UseFormOptions<T>) {
+}: UseFormOptions<T>): UseFormReturn<T> {
   const [values, setValues] = useState<T>(initialValues);
 
   const handleChange =
@@ -33,20 +37,8 @@ export function useForm<T extends Record<string, unknown>>({
         onValueChange?.();
       };
 
-  const setFieldValue = <K extends keyof T>(name: K, value: T[K]) => {
-    setValues((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    onValueChange?.();
-  };
-
   const handleSubmit = () => {
     onSubmit(values);
-  };
-
-  const reset = () => {
-    setValues(initialValues);
   };
 
   const isValid = validate ? validate(values) : true;
@@ -55,9 +47,6 @@ export function useForm<T extends Record<string, unknown>>({
     handleChange,
     handleSubmit,
     isValid,
-    reset,
-    setFieldValue,
-    setValues,
     values,
   };
 }

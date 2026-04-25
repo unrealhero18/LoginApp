@@ -15,7 +15,11 @@ export function setQueryClientUnauthorizedHandler(handler: (() => void) | null):
 }
 
 const handleError = (error: unknown): void => {
-  if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+  if (
+    error instanceof ApiError &&
+    !error.skipAuthHandler &&
+    (error.status === 401 || error.status === 403)
+  ) {
     onUnauthorizedHandler?.();
   }
 };

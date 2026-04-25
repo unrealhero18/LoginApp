@@ -77,4 +77,28 @@ describe('ProfileScreen', () => {
 
     await waitFor(() => expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled());
   });
+
+  it('renders the error UI with a Retry button when the profile query errors', async () => {
+    // getMe is called three times in this flow:
+    //   1) AuthProvider hydration — must succeed so the token state is set
+    //      and useProfile becomes enabled.
+    //   2) useProfile's first run — rejects, surfacing the error UI.
+    //   3) useProfile after Retry — resolves, returning to the happy path.
+    mockedAuth.getMe.mockReset();
+    mockedAuth.getMe.mockResolvedValueOnce(USER);
+    mockedAuth.getMe.mockRejectedValueOnce(new Error('network'));
+    mockedAuth.getMe.mockResolvedValue(USER);
+
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { findByTestId, findByText } = renderWithAuth(
+      <ProfileScreen navigation={navigationStub} route={routeStub} />,
+    );
+
+    expect(await findByTestId('profile-error')).toBeTruthy();
+    const retry = await findByText('Retry');
+    fireEvent.press(retry);
+
+    expect(await findByText(`${USER.firstName} ${USER.lastName}`)).toBeTruthy();
+    (console.error as jest.Mock).mockRestore();
+  });
 });

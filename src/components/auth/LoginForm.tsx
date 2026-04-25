@@ -5,9 +5,8 @@ import { Keyboard, StyleSheet, View } from 'react-native';
 import { PrimaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { Input } from '@/components/common/Input';
-import { ErrorMessages } from '@/constants/messages';
 import { useForm } from '@/hooks/useForm';
-import { resolveErrorMessage } from '@/utils/error';
+import { getLoginErrorMessage } from '@/utils/error';
 
 import { Spacing } from '@/theme/spacing';
 
@@ -32,11 +31,13 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
         onResetError();
       }
     },
+    // PrimaryButton already disables itself while loading, so `isLoading` is
+    // intentionally not part of `validate`.
     validate: (formValues) =>
-      formValues.username.length > 0 && formValues.password.length > 0 && !isLoading,
+      formValues.username.length > 0 && formValues.password.length > 0,
   });
 
-  const errorMessage = resolveErrorMessage(error, ErrorMessages.LOGIN_FAILURE);
+  const errorMessage = getLoginErrorMessage(error);
 
   return (
     <View style={styles.container}>

@@ -90,20 +90,4 @@ describe('useForm', () => {
     });
     expect(result.current.isValid).toBe(true);
   });
-
-  it('should reset values to initial state when reset is called', () => {
-    const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit })
-    );
-
-    act(() => {
-      result.current.handleChange('username')('testuser');
-    });
-    expect(result.current.values.username).toBe('testuser');
-
-    act(() => {
-      result.current.reset();
-    });
-    expect(result.current.values).toEqual(initialValues);
-  });
 });

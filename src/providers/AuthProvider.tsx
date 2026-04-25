@@ -6,6 +6,7 @@ import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
 import { getMe, login as loginRequest } from '@/services/api/auth';
 import { setAuthToken, setOnUnauthorized } from '@/services/api/client';
 import { clearToken, loadToken, saveToken } from '@/services/storage/secureTokenStore';
+import { LoginProfileFetchError } from '@/utils/error';
 import { logger } from '@/utils/logger';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: Props) {
    * Logs out the user by clearing state, storage, and the query cache.
    * Note: useCallback is used intentionally here to avoid unnecessary context re-renders.
    */
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (): Promise<void> => {
     // 1. Clear memory state
     setAuthToken(null);
     setUser(null);
@@ -75,7 +76,7 @@ export function AuthProvider({ children }: Props) {
    * Note: useCallback is used intentionally here to avoid unnecessary context re-renders.
    */
   const login = useCallback(
-    async (payload: LoginPayload) => {
+    async (payload: LoginPayload): Promise<void> => {
       // Fetch new tokens
       const nextToken = await loginRequest(payload);
 
@@ -98,8 +99,14 @@ export function AuthProvider({ children }: Props) {
       } catch (error) {
         logger.error('[AuthProvider] profile fetch failed after login; clearing token', error);
         setAuthToken(null);
-        await clearToken();
-        throw error;
+        // Wrap clearToken in its own try/catch so a Keychain failure here
+        // never masks the original profile-fetch error.
+        try {
+          await clearToken();
+        } catch (clearError) {
+          logger.error('[AuthProvider] failed to clear token after profile fetch failure', clearError);
+        }
+        throw new LoginProfileFetchError(error);
       }
     },
     [],
@@ -152,7 +159,7 @@ export function AuthProvider({ children }: Props) {
       }
     };
 
-    void hydrate();
+    hydrate().catch(() => {});
 
     return () => {
       cancelled = true;
@@ -161,15 +168,23 @@ export function AuthProvider({ children }: Props) {
 
   /**
    * Effect to register global unauthorized handlers.
-   * If any API request (via fetch or React Query) returns 401/403, 
+   * If any API request (via fetch or React Query) returns 401/403,
    * this will trigger an automatic logout.
+   *
+   * The `pending` flag deduplicates concurrent invocations within a single
+   * unauthorized incident (e.g. queryCache + apiFetch firing for the same
+   * response). It MUST reset once `logout()` settles — otherwise the handler
+   * latches permanently after the first call and subsequent session
+   * expirations would be silently dropped.
    */
   useEffect(() => {
     let pending = false;
     const handler = (): void => {
       if (pending) return;
       pending = true;
-      void logout();
+      logout().finally(() => {
+        pending = false;
+      }).catch(() => {});
     };
 
     setOnUnauthorized(handler);
