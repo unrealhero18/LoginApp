@@ -1,5 +1,11 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+## Documentation
+
+| Topic | Page |
+| --- | --- |
+| Authentication flow (login, secure token storage, 401/403 invalidation, protected routing) | [docs/auth-flow.md](docs/auth-flow.md) |
+
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
