@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 
 import LoginScreen from '@/screens/LoginScreen';
 import * as authService from '@/services/api/auth';
@@ -29,7 +29,15 @@ const routeStub = { key: 'login', name: 'Login' as const, params: undefined } as
 
 describe('LoginScreen', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
   });
 
   it('renders inputs and does not submit when fields are empty', async () => {

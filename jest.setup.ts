@@ -52,3 +52,12 @@ jest.mock('react-native-keychain', () => ({
     RSA: 'KeystoreRSAECB',
   },
 }));
+
+beforeEach(() => {
+  jest.spyOn(console, 'debug').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
