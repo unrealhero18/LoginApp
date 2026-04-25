@@ -47,6 +47,7 @@ export function AuthProvider({ children }: Props) {
 
   /**
    * Logs out the user by clearing state, storage, and the query cache.
+   * Note: useCallback is used intentionally here to avoid unnecessary context re-renders.
    */
   const logout = useCallback(async () => {
     // 1. Clear memory state
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: Props) {
    * 2. Saves the token to secure storage.
    * 3. Fetches the user profile.
    * 4. Updates the local state.
+   * Note: useCallback is used intentionally here to avoid unnecessary context re-renders.
    */
   const login = useCallback(
     async (payload: LoginPayload) => {
@@ -179,6 +181,8 @@ export function AuthProvider({ children }: Props) {
     };
   }, [logout]);
 
+  // Note: useMemo is intentionally used here to prevent consumers from
+  // re-rendering on every AuthProvider render.
   const value = useMemo<AuthContextValue>(
     () => ({ user, token, isHydrating, login, logout }),
     [user, token, isHydrating, login, logout],

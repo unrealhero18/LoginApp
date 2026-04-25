@@ -36,7 +36,15 @@ export async function loadToken(): Promise<AuthToken | null> {
       return null;
     }
     // Parse the JSON string stored in the password field
-    return JSON.parse(credentials.password) as AuthToken;
+    // The outer try/catch safely handles JSON.parse errors for corrupted keychain data
+    const parsed = JSON.parse(credentials.password);
+    
+    // Basic structural validation
+    if (parsed && typeof parsed.accessToken === 'string') {
+      return parsed as AuthToken;
+    }
+    
+    return null;
   } catch (error) {
     logger.error('[secureTokenStore] failed to load token', error);
     return null;

@@ -1,0 +1,4892 @@
+commit d571a6c87e76a256c6d1db368500bfb1d599d0c0
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 21:42:29 2026 +0300
+
+    refactor: standardize type definitions and implement error handling for profile fetch in AuthProvider
+---
+ src/components/auth/LoginForm.tsx             |  4 ++--
+ src/hooks/useForm.ts                          |  4 ++--
+ src/providers/AuthProvider.tsx                | 16 +++++++++++-----
+ src/providers/__tests__/AuthProvider.test.tsx | 21 +++++++++++++++++++++
+ 4 files changed, 36 insertions(+), 9 deletions(-)
+
+diff --git a/src/components/auth/LoginForm.tsx b/src/components/auth/LoginForm.tsx
+index 041a76d..17e637b 100644
+--- a/src/components/auth/LoginForm.tsx
++++ b/src/components/auth/LoginForm.tsx
+@@ -13,12 +13,12 @@ import { Spacing } from '@/theme/spacing';
+ 
+ import type { LoginPayload } from '@/types/auth';
+ 
+-interface LoginFormProps {
++type LoginFormProps = {
+   onSubmit: (values: LoginPayload) => void;
+   isLoading: boolean;
+   error: Error | null;
+   onResetError: () => void;
+-}
++};
+ 
+ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFormProps) => {
+   const { values, handleChange, handleSubmit, isValid } = useForm<LoginPayload>({
+diff --git a/src/hooks/useForm.ts b/src/hooks/useForm.ts
+index bdfcfb1..e0b9127 100644
+--- a/src/hooks/useForm.ts
++++ b/src/hooks/useForm.ts
+@@ -1,11 +1,11 @@
+ import { useState } from 'react';
+ 
+-interface UseFormOptions<T> {
++type UseFormOptions<T> = {
+   initialValues: T;
+   onSubmit: (values: T) => void;
+   onValueChange?: () => void;
+   validate?: (values: T) => boolean;
+-}
++};
+ 
+ /**
+  * A reusable hook for managing form state and submission.
+diff --git a/src/providers/AuthProvider.tsx b/src/providers/AuthProvider.tsx
+index 5e3f5fe..9345df9 100644
+--- a/src/providers/AuthProvider.tsx
++++ b/src/providers/AuthProvider.tsx
+@@ -88,11 +88,17 @@ export function AuthProvider({ children }: Props) {
+       }
+ 
+       // Fetch user profile using the new token
+-      const profile = await getMe();
+-
+-      // Finalize state update
+-      setToken(nextToken);
+-      setUser(profile);
++      try {
++        const profile = await getMe();
++        // Finalize state update
++        setToken(nextToken);
++        setUser(profile);
++      } catch (error) {
++        logger.error('[AuthProvider] profile fetch failed after login; clearing token', error);
++        setAuthToken(null);
++        await clearToken();
++        throw error;
++      }
+     },
+     [],
+   );
+diff --git a/src/providers/__tests__/AuthProvider.test.tsx b/src/providers/__tests__/AuthProvider.test.tsx
+index e03143e..76ba22d 100644
+--- a/src/providers/__tests__/AuthProvider.test.tsx
++++ b/src/providers/__tests__/AuthProvider.test.tsx
+@@ -118,6 +118,27 @@ describe('AuthProvider', () => {
+     expect(result.current.user).toEqual(USER);
+   });
+ 
++  it('clears token if getMe fails during login', async () => {
++    mockedAuth.login.mockResolvedValue(TOKEN);
++    mockedAuth.getMe.mockRejectedValueOnce(new Error('profile fetch failed'));
++
++    const { result } = renderHook(() => useAuth(), { wrapper });
++    await waitFor(() => expect(result.current.isHydrating).toBe(false));
++
++    jest.spyOn(console, 'error').mockImplementation(() => {});
++    await act(async () => {
++      await expect(
++        result.current.login({ username: 'emily', password: 'secret' }),
++      ).rejects.toThrow('profile fetch failed');
++    });
++    (console.error as jest.Mock).mockRestore();
++
++    expect(mockedClient.setAuthToken).toHaveBeenLastCalledWith(null);
++    expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
++    expect(result.current.token).toBeNull();
++    expect(result.current.user).toBeNull();
++  });
++
+   it('logout clears state, token storage, and api client token', async () => {
+     mockedAuth.login.mockResolvedValue(TOKEN);
+     mockedAuth.getMe.mockResolvedValue(USER);
+
+commit 179b584f81574383bfd3b8d3e26b7678c5edc4cf
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 21:36:05 2026 +0300
+
+    style: fix import order, convert interface to type, remove unused imports
+---
+ jest.setup.ts                                              | 1 +
+ src/components/common/Button/__tests__/ButtonBase.test.tsx | 2 +-
+ src/components/common/ErrorMessage/ErrorMessage.tsx        | 8 +++++---
+ src/hooks/__tests__/useForm.test.ts                        | 5 +++--
+ src/providers/queryClient.ts                               | 2 +-
+ src/screens/__tests__/LoginScreen.test.tsx                 | 2 +-
+ 6 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/jest.setup.ts b/jest.setup.ts
+index fcb056a..e66d985 100644
+--- a/jest.setup.ts
++++ b/jest.setup.ts
+@@ -1,5 +1,6 @@
+ import { focusManager, onlineManager } from '@tanstack/react-query';
+ import { act, cleanup } from '@testing-library/react-native';
++
+ import { queryClient } from '@/providers/queryClient';
+ 
+ // --- Mocks ---
+diff --git a/src/components/common/Button/__tests__/ButtonBase.test.tsx b/src/components/common/Button/__tests__/ButtonBase.test.tsx
+index 5a3929a..fbb9292 100644
+--- a/src/components/common/Button/__tests__/ButtonBase.test.tsx
++++ b/src/components/common/Button/__tests__/ButtonBase.test.tsx
+@@ -1,4 +1,4 @@
+-import { View, Pressable } from 'react-native';
++import { View } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
+ 
+ import { ButtonBase } from '../ButtonBase';
+diff --git a/src/components/common/ErrorMessage/ErrorMessage.tsx b/src/components/common/ErrorMessage/ErrorMessage.tsx
+index 0164b18..29dfc72 100644
+--- a/src/components/common/ErrorMessage/ErrorMessage.tsx
++++ b/src/components/common/ErrorMessage/ErrorMessage.tsx
+@@ -1,15 +1,17 @@
+ import React from 'react';
++
+ import { View } from 'react-native';
+-import InfoIcon from '@/assets/icons/info.svg';
+ 
+ import { AppText } from '@/components/common/AppText';
+ 
++import InfoIcon from '@/assets/icons/info.svg';
++
+ import { styles } from './ErrorMessage.styles';
+ 
+-interface ErrorMessageProps {
++type ErrorMessageProps = {
+   message: string | null;
+   testID?: string;
+-}
++};
+ 
+ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, testID }) => {
+   if (!message) return null;
+diff --git a/src/hooks/__tests__/useForm.test.ts b/src/hooks/__tests__/useForm.test.ts
+index 2dbff8c..4083489 100644
+--- a/src/hooks/__tests__/useForm.test.ts
++++ b/src/hooks/__tests__/useForm.test.ts
+@@ -1,4 +1,5 @@
+ import { renderHook, act } from '@testing-library/react-native';
++
+ import { useForm } from '../useForm';
+ 
+ describe('useForm', () => {
+@@ -66,9 +67,9 @@ describe('useForm', () => {
+     const validate = (values: typeof initialValues) =>
+       values.username.length > 0 && values.password.length > 0;
+ 
+-    interface HookProps {
++    type HookProps = {
+       valFunc: (values: typeof initialValues) => boolean;
+-    }
++    };
+ 
+     const { result } = renderHook(
+       ({ valFunc }: HookProps) => useForm<typeof initialValues>({ initialValues, onSubmit, validate: valFunc }),
+diff --git a/src/providers/queryClient.ts b/src/providers/queryClient.ts
+index ed9bc7b..34a3730 100644
+--- a/src/providers/queryClient.ts
++++ b/src/providers/queryClient.ts
+@@ -1,7 +1,7 @@
+ import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+ 
+-import { ApiError } from '@/services/api/client';
+ import { IS_TEST } from '@/constants/env';
++import { ApiError } from '@/services/api/client';
+ 
+ let onUnauthorizedHandler: (() => void) | null = null;
+ 
+diff --git a/src/screens/__tests__/LoginScreen.test.tsx b/src/screens/__tests__/LoginScreen.test.tsx
+index 79053f7..4cfd100 100644
+--- a/src/screens/__tests__/LoginScreen.test.tsx
++++ b/src/screens/__tests__/LoginScreen.test.tsx
+@@ -1,6 +1,6 @@
+ import React from 'react';
+ 
+-import { act, fireEvent, waitFor } from '@testing-library/react-native';
++import { fireEvent, waitFor } from '@testing-library/react-native';
+ 
+ import LoginScreen from '@/screens/LoginScreen';
+ import * as authService from '@/services/api/auth';
+
+commit 8da3fd249403a912af56e2c30cea032278a588e8
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 21:36:01 2026 +0300
+
+    fix(auth): cap input length, guard duplicate logout, and broaden error resolution
+---
+ src/components/auth/LoginForm.tsx | 2 ++
+ src/constants/messages.ts         | 2 +-
+ src/providers/AuthProvider.tsx    | 3 +++
+ src/utils/error.ts                | 2 +-
+ src/utils/logger.ts               | 4 +++-
+ 5 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/src/components/auth/LoginForm.tsx b/src/components/auth/LoginForm.tsx
+index 64b0239..041a76d 100644
+--- a/src/components/auth/LoginForm.tsx
++++ b/src/components/auth/LoginForm.tsx
+@@ -47,6 +47,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
+         onClear={() => handleChange('username')('')}
+         autoCapitalize="none"
+         autoCorrect={false}
++        maxLength={128}
+         style={styles.input}
+         testID="username-input"
+       />
+@@ -59,6 +60,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
+         secureTextEntry
+         autoCapitalize="none"
+         autoCorrect={false}
++        maxLength={128}
+         style={styles.input}
+         testID="password-input"
+       />
+diff --git a/src/constants/messages.ts b/src/constants/messages.ts
+index baa3588..2c3b3a1 100644
+--- a/src/constants/messages.ts
++++ b/src/constants/messages.ts
+@@ -1,4 +1,4 @@
+ export const ErrorMessages = {
+-  LOGIN_FAILURE: 'User email doesn’t exist',
++  LOGIN_FAILURE: 'User email doesn’t exist.',
+   GENERIC: 'Something went wrong. Please try again.',
+ } as const;
+diff --git a/src/providers/AuthProvider.tsx b/src/providers/AuthProvider.tsx
+index e7c70c2..5e3f5fe 100644
+--- a/src/providers/AuthProvider.tsx
++++ b/src/providers/AuthProvider.tsx
+@@ -157,7 +157,10 @@ export function AuthProvider({ children }: Props) {
+    * this will trigger an automatic logout.
+    */
+   useEffect(() => {
++    let pending = false;
+     const handler = (): void => {
++      if (pending) return;
++      pending = true;
+       void logout();
+     };
+ 
+diff --git a/src/utils/error.ts b/src/utils/error.ts
+index fbfd60e..1ebcf45 100644
+--- a/src/utils/error.ts
++++ b/src/utils/error.ts
+@@ -11,7 +11,7 @@ export function resolveErrorMessage(
+     return null;
+   }
+ 
+-  if (error instanceof ApiError && (error.status === 401 || error.status === 400)) {
++  if (error instanceof ApiError) {
+     return message;
+   }
+ 
+diff --git a/src/utils/logger.ts b/src/utils/logger.ts
+index 7d6028b..de102c8 100644
+--- a/src/utils/logger.ts
++++ b/src/utils/logger.ts
+@@ -5,7 +5,9 @@ export const logger = {
+     }
+   },
+   error: (message: string, ...args: unknown[]) => {
+-    console.error(message, ...args);
++    if (__DEV__) {
++      console.error(message, ...args);
++    }
+   },
+   warn: (message: string, ...args: unknown[]) => {
+     if (__DEV__) {
+
+commit 1a19f4b27d71129ef901a0fa25e7c4f714fa5278
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 21:35:58 2026 +0300
+
+    docs: rewrite README and add getting-started guide
+---
+ README.md               | 121 +++++++++++++-----------------------------------
+ docs/auth-flow.md       |   8 ++--
+ docs/getting-started.md |  91 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 127 insertions(+), 93 deletions(-)
+
+diff --git a/README.md b/README.md
+index 8aa503c..d7e8d13 100644
+--- a/README.md
++++ b/README.md
+@@ -1,103 +1,46 @@
+-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
++# LoginApp
+ 
+-## Documentation
+-
+-| Topic | Page |
+-| --- | --- |
+-| Authentication flow (login, secure token storage, 401/403 invalidation, protected routing) | [docs/auth-flow.md](docs/auth-flow.md) |
+-
+-# Getting Started
+-
+-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+-
+-## Step 1: Start Metro
+-
+-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+-
+-To start the Metro dev server, run the following command from the root of your React Native project:
+-
+-```sh
+-# Using npm
+-npm start
+-
+-# OR using Yarn
+-yarn start
+-```
+-
+-## Step 2: Build and run your app
+-
+-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+-
+-### Android
+-
+-```sh
+-# Using npm
+-npm run android
+-
+-# OR using Yarn
+-yarn android
+-```
++> React Native authentication demo — secure token storage, protected routing, and session invalidation.
+ 
+-### iOS
++A fully typed React Native app demonstrating a complete authentication flow: login form, keychain-backed token persistence, automatic hydration on startup, and instant stack switching on 401/403. Built as a learning reference for production-grade auth patterns.
+ 
+-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
++## Quick Start
+ 
+-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+-
+-```sh
+-bundle install
+-```
+-
+-Then, and every time you update your native dependencies, run:
+-
+-```sh
+-bundle exec pod install
+-```
+-
+-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+-
+-```sh
+-# Using npm
+-npm run ios
+-
+-# OR using Yarn
+-yarn ios
++```bash
++pnpm install
++bundle exec pod install   # iOS only — installs CocoaPods native deps
++pnpm ios                  # or: pnpm android
+ ```
+ 
+-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
++> First-time iOS setup: run `bundle install` once before `pod install`.
+ 
+-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
++## Key Features
+ 
+-## Step 3: Modify your app
++- **Secure storage** — tokens persisted to iOS Keychain / Android Keystore via `react-native-keychain`. `AsyncStorage` is never used for tokens.
++- **Automatic hydration** — on startup `AuthProvider` rehydrates from the keychain and calls `GET /auth/me` before the first render.
++- **State-driven routing** — `RootNavigator` switches between `AuthStack` (Home, Login) and `AppStack` (Profile) based on auth state. Screens never call `navigate()` after logout.
++- **401/403 invalidation** — any API call or React Query cache error with these statuses triggers `AuthProvider.logout()` via a single registered handler.
++- **React Query integration** — `useLogin` mutation, `useProfile` query, and a global `QueryCache`/`MutationCache` error handler that bridges to the auth logout bridge.
++- **52 tests** — hooks, provider transitions, screen smoke tests, and keychain mock coverage.
+ 
+-Now that you have successfully run the app, let's make changes!
++## Tech Stack
+ 
+-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
++| Layer | Library |
++|-------|---------|
++| Framework | React Native 0.85 + TypeScript |
++| Navigation | React Navigation v7 (native stack) |
++| Server state | TanStack React Query v5 |
++| Secure storage | react-native-keychain |
++| API | [DummyJSON Auth](https://dummyjson.com/docs/auth) |
++| Testing | Jest + @testing-library/react-native |
+ 
+-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+-
+-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
+-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+-
+-## Congratulations! :tada:
+-
+-You've successfully run and modified your React Native App. :partying_face:
+-
+-### Now what?
+-
+-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
+-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+-
+-# Troubleshooting
+-
+-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
++## Documentation
+ 
+-# Learn More
++| Guide | Description |
++|-------|-------------|
++| [Getting Started](docs/getting-started.md) | Prerequisites, install, run iOS/Android, run tests |
++| [Auth Flow](docs/auth-flow.md) | Architecture, modules, screen behavior, session invalidation |
+ 
+-To learn more about React Native, take a look at the following resources:
++## License
+ 
+-- [React Native Website](https://reactnative.dev) - learn more about React Native.
+-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
+-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
+-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
+-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
++MIT
+diff --git a/docs/auth-flow.md b/docs/auth-flow.md
+index 24f4003..052d15a 100644
+--- a/docs/auth-flow.md
++++ b/docs/auth-flow.md
+@@ -1,3 +1,5 @@
++[← Getting Started](getting-started.md) · [Back to README](../README.md)
++
+ # Authentication Flow
+ 
+ LoginApp's authentication is built on the [DummyJSON Auth API](https://dummyjson.com/docs/auth). The flow is layered: a typed HTTP client at the bottom, a service that calls it, an `AuthProvider` that owns auth state, and a `RootNavigator` that switches between an authenticated and unauthenticated stack based on that state.
+@@ -146,8 +148,6 @@ Coverage:
+ - Token refresh (`refreshToken` flow) — see `.ai-factory/ROADMAP.md` "Out of scope".
+ - OAuth, edit profile, push notifications, offline mode.
+ 
+-## See also
++## See Also
+ 
+-- `.ai-factory/ROADMAP.md` — Phase 2 milestone.
+-- `.ai-factory/ARCHITECTURE.md` — layered (screen-centric) architecture.
+-- `.ai-factory/RULES.md` — coding rules (no `any`, `@/` alias, `StyleSheet.create`, no `AsyncStorage` for tokens).
++- [Getting Started](getting-started.md) — prerequisites, install, running the app and tests
+diff --git a/docs/getting-started.md b/docs/getting-started.md
+new file mode 100644
+index 0000000..30e4025
+--- /dev/null
++++ b/docs/getting-started.md
+@@ -0,0 +1,91 @@
++[Back to README](../README.md) · [Auth Flow →](auth-flow.md)
++
++# Getting Started
++
++Everything you need to install, run, and test LoginApp locally.
++
++## Prerequisites
++
++| Tool | Minimum version | Notes |
++|------|----------------|-------|
++| Node.js | 18 LTS | Use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schacon/fnm) |
++| pnpm | 8+ | `corepack enable` or `npm install -g pnpm` |
++| Ruby | 3.x | Required for CocoaPods (iOS only) |
++| CocoaPods | 1.14+ | Managed via Bundler — see below |
++| Xcode | 15+ | iOS builds (macOS only) |
++| Android Studio | Hedgehog+ | Android builds |
++
++> Follow the [React Native environment setup guide](https://reactnative.dev/docs/set-up-your-environment) to install Xcode command-line tools and configure the Android SDK.
++
++## Install
++
++```bash
++# 1. Install JavaScript dependencies
++pnpm install
++
++# 2. iOS only — install CocoaPods gem via Bundler (once per machine)
++bundle install
++
++# 3. iOS only — install native pods (re-run whenever native deps change)
++bundle exec pod install
++```
++
++## Running the app
++
++Start Metro first, then launch the native build in a second terminal.
++
++### Start Metro
++
++```bash
++pnpm start
++```
++
++### iOS
++
++```bash
++pnpm ios
++```
++
++Runs in the iOS Simulator by default. To target a physical device, open `ios/LoginApp.xcworkspace` in Xcode and select your device.
++
++### Android
++
++```bash
++pnpm android
++```
++
++Requires a running Android emulator or a connected device with USB debugging enabled.
++
++### Hot reload
++
++Metro enables [Fast Refresh](https://reactnative.dev/docs/fast-refresh) by default — save a file and the app updates instantly. For a full reload:
++
++- **iOS Simulator:** press `R`
++- **Android Emulator:** press `R` twice, or open the Dev Menu with `Cmd ⌘ + M` (macOS) / `Ctrl + M` (Windows/Linux)
++
++## Running tests
++
++```bash
++pnpm test
++```
++
++All 52 tests should pass. The suite covers hooks, `AuthProvider` transitions, and screen smoke tests.
++
++For lint and type checks:
++
++```bash
++pnpm lint             # ESLint
++npx tsc --noEmit      # TypeScript
++```
++
++## What happens on first launch
++
++1. `AuthProvider` mounts and calls `loadToken()` from the keychain.
++2. No stored token → `isHydrating` flips to `false` → `AuthStack` renders (Home screen).
++3. Navigate to Login, sign in with a [DummyJSON test account](https://dummyjson.com/docs/auth) (e.g. `emilys` / `emilyspass`).
++4. On success the token is saved to the keychain, `AuthProvider` calls `GET /auth/me`, and `RootNavigator` swaps to `AppStack` (Profile screen).
++5. Kill and reopen the app — the token rehydrates and you land directly on Profile.
++
++## See Also
++
++- [Auth Flow](auth-flow.md) — architecture, module breakdown, session invalidation
+
+commit 9b07ea5fa55f6e5e723900bfb7b1e5c7f887196d
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 21:15:44 2026 +0300
+
+    docs(auth): add documentation and internal comments to auth flow
+    
+    Added JSDoc comments and internal annotations to clarify the authentication
+    lifecycle and logic in the following areas:
+    - AuthProvider: documented session hydration and logout orchestrations
+    - API Client: documented core fetch logic and global error handling
+    - SecureTokenStore: documented keychain persistence for tokens
+    - Auth Service: documented login and user profile requests
+    - QueryClient: documented global cache configuration
+---
+ src/providers/AuthProvider.tsx           | 58 ++++++++++++++++++++++++++++++++
+ src/providers/queryClient.ts             | 19 +++++++++--
+ src/services/api/auth.ts                 | 14 ++++++++
+ src/services/api/client.ts               | 35 +++++++++++++++++++
+ src/services/storage/secureTokenStore.ts | 17 ++++++++++
+ 5 files changed, 141 insertions(+), 2 deletions(-)
+
+diff --git a/src/providers/AuthProvider.tsx b/src/providers/AuthProvider.tsx
+index e34f63b..e7c70c2 100644
+--- a/src/providers/AuthProvider.tsx
++++ b/src/providers/AuthProvider.tsx
+@@ -10,6 +10,9 @@ import { logger } from '@/utils/logger';
+ 
+ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ 
++/**
++ * Shape of the authentication context provided to the application.
++ */
+ export type AuthContextValue = {
+   user: AuthUser | null;
+   token: AuthToken | null;
+@@ -18,23 +21,43 @@ export type AuthContextValue = {
+   logout: () => Promise<void>;
+ };
+ 
++/**
++ * Context used to share authentication state across the component tree.
++ * Use the `useAuth` hook to access this context.
++ */
+ export const AuthContext = createContext<AuthContextValue | null>(null);
+ 
+ type Props = {
+   children: React.ReactNode;
+ };
+ 
++/**
++ * AuthProvider component that manages the authentication lifecycle.
++ * It handles:
++ * 1. Session hydration (restoring token from Keychain on startup).
++ * 2. Login/Logout actions.
++ * 3. Syncing the API client and QueryClient with the auth state.
++ * 4. Handling global unauthorized (401/403) events.
++ */
+ export function AuthProvider({ children }: Props) {
+   const queryClient = useQueryClient();
+   const [user, setUser] = useState<AuthUser | null>(null);
+   const [token, setToken] = useState<AuthToken | null>(null);
+   const [isHydrating, setIsHydrating] = useState(true);
+ 
++  /**
++   * Logs out the user by clearing state, storage, and the query cache.
++   */
+   const logout = useCallback(async () => {
++    // 1. Clear memory state
+     setAuthToken(null);
+     setUser(null);
+     setToken(null);
++
++    // 2. Clear React Query cache to prevent data leakage between users
+     queryClient.clear();
++
++    // 3. Clear persistent storage
+     try {
+       await clearToken();
+     } catch (error) {
+@@ -42,43 +65,71 @@ export function AuthProvider({ children }: Props) {
+     }
+   }, [queryClient]);
+ 
++  /**
++   * Performs the login operation:
++   * 1. Calls the login API.
++   * 2. Saves the token to secure storage.
++   * 3. Fetches the user profile.
++   * 4. Updates the local state.
++   */
+   const login = useCallback(
+     async (payload: LoginPayload) => {
++      // Fetch new tokens
+       const nextToken = await loginRequest(payload);
++
++      // Update API client immediately
+       setAuthToken(nextToken.accessToken);
++
++      // Persist tokens for future sessions
+       try {
+         await saveToken(nextToken);
+       } catch (error) {
+         logger.error('[AuthProvider] failed to persist token after login', error);
+       }
++
++      // Fetch user profile using the new token
+       const profile = await getMe();
++
++      // Finalize state update
+       setToken(nextToken);
+       setUser(profile);
+     },
+     [],
+   );
+ 
++  /**
++   * Effect to restore the authentication session on app launch.
++   */
+   useEffect(() => {
+     let cancelled = false;
+ 
+     const hydrate = async () => {
++      // 1. Attempt to load token from Keychain
+       const stored = await loadToken();
+       if (cancelled) {
+         return;
+       }
++
+       if (!stored) {
+         setIsHydrating(false);
+         return;
+       }
++
++      // 2. Set token in API client for subsequent requests
+       setAuthToken(stored.accessToken);
++
+       try {
++        // 3. Verify session by fetching user profile
+         const profile = await getMe();
+         if (cancelled) {
+           return;
+         }
++
++        // 4. Update state with restored session
+         setToken(stored);
+         setUser(profile);
+       } catch (error) {
++        // If profile fetch fails (e.g. token expired), clear everything
+         logger.warn('[AuthProvider] hydration failed; clearing stored token', error);
+         setAuthToken(null);
+         try {
+@@ -100,12 +151,19 @@ export function AuthProvider({ children }: Props) {
+     };
+   }, []);
+ 
++  /**
++   * Effect to register global unauthorized handlers.
++   * If any API request (via fetch or React Query) returns 401/403, 
++   * this will trigger an automatic logout.
++   */
+   useEffect(() => {
+     const handler = (): void => {
+       void logout();
+     };
++
+     setOnUnauthorized(handler);
+     setQueryClientUnauthorizedHandler(handler);
++
+     return () => {
+       setOnUnauthorized(null);
+       setQueryClientUnauthorizedHandler(null);
+diff --git a/src/providers/queryClient.ts b/src/providers/queryClient.ts
+index 4cb4063..ed9bc7b 100644
+--- a/src/providers/queryClient.ts
++++ b/src/providers/queryClient.ts
+@@ -5,6 +5,11 @@ import { IS_TEST } from '@/constants/env';
+ 
+ let onUnauthorizedHandler: (() => void) | null = null;
+ 
++/**
++ * Sets a callback function to be executed when a React Query fetch fails with an unauthorized status.
++ * 
++ * @param handler - The callback function or null to remove it.
++ */
+ export function setQueryClientUnauthorizedHandler(handler: (() => void) | null): void {
+   onUnauthorizedHandler = handler;
+ }
+@@ -15,25 +20,35 @@ const handleError = (error: unknown): void => {
+   }
+ };
+ 
++/**
++ * Configures default options for queries and mutations.
++ * Adjusts settings like retry logic and cache times based on the environment.
++ */
+ const getQueryOptions = () => {
+   // Time constants in milliseconds
++  // In tests, we disable caching to ensure test isolation
+   const STALE_TIME = IS_TEST ? 0 : 1000 * 60 * 5; // 5 minutes
+   const GC_TIME = IS_TEST ? 0 : 1000 * 60 * 30; // 30 minutes
+ 
+   return {
+-    retry: IS_TEST ? 0 : 2,
++    retry: IS_TEST ? 0 : 2, // Retry failed queries twice in production
+     staleTime: STALE_TIME,
+     gcTime: GC_TIME,
+   };
+ };
+ 
++/**
++ * Global QueryClient instance for the application.
++ * Includes centralized error handling for all queries and mutations.
++ */
+ export const queryClient = new QueryClient({
+   defaultOptions: {
+     queries: getQueryOptions(),
+     mutations: {
+-      retry: 0,
++      retry: 0, // Don't retry mutations by default (to avoid duplicate side effects)
+     },
+   },
++  // Global cache callbacks for unified error handling (e.g. logging out on 401)
+   queryCache: new QueryCache({ onError: handleError }),
+   mutationCache: new MutationCache({ onError: handleError }),
+ });
+diff --git a/src/services/api/auth.ts b/src/services/api/auth.ts
+index efb67c5..5136639 100644
+--- a/src/services/api/auth.ts
++++ b/src/services/api/auth.ts
+@@ -2,6 +2,13 @@ import { apiFetch } from '@/services/api/client';
+ 
+ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ 
++/**
++ * Sends a login request to the API.
++ * 
++ * @param payload - The login credentials (username and password).
++ * @returns A promise that resolves to the authentication token (accessToken and refreshToken).
++ * @throws {ApiError} If the login request fails.
++ */
+ export async function login(payload: LoginPayload): Promise<AuthToken> {
+   return apiFetch<AuthToken>('/auth/login', {
+     method: 'POST',
+@@ -9,6 +16,13 @@ export async function login(payload: LoginPayload): Promise<AuthToken> {
+   });
+ }
+ 
++/**
++ * Fetches the current user's profile information.
++ * This request requires a valid authentication token to be set in the API client.
++ * 
++ * @returns A promise that resolves to the user's profile data.
++ * @throws {ApiError} If the request fails (e.g., unauthorized).
++ */
+ export async function getMe(): Promise<AuthUser> {
+   return apiFetch<AuthUser>('/auth/me');
+ }
+diff --git a/src/services/api/client.ts b/src/services/api/client.ts
+index 1dc3f4d..4f2743b 100644
+--- a/src/services/api/client.ts
++++ b/src/services/api/client.ts
+@@ -2,6 +2,10 @@ import { logger } from '@/utils/logger';
+ 
+ const BASE_URL = 'https://dummyjson.com';
+ 
++/**
++ * Custom error class for API requests.
++ * Captures the HTTP status code and the error message from the response.
++ */
+ export class ApiError extends Error {
+   status: number;
+ 
+@@ -24,20 +28,49 @@ async function safeReadMessage(response: Response): Promise<string> {
+   }
+ }
+ 
++/**
++ * Updates the access token used for authenticated requests.
++ * 
++ * @param token - The new JWT access token or null to clear it.
++ */
+ export function setAuthToken(token: string | null): void {
+   accessToken = token;
+ }
+ 
++/**
++ * Sets a callback function to be executed when an unauthorized response (401/403) is received.
++ * Used by AuthProvider to trigger a global logout.
++ * 
++ * @param handler - The callback function or null to remove it.
++ */
+ export function setOnUnauthorized(handler: (() => void) | null): void {
+   onUnauthorized = handler;
+ }
+ 
++/**
++ * A wrapper around the native fetch API that handles:
++ * - JSON serialization/deserialization
++ * - Common headers (Accept, Content-Type)
++ * - Bearer token authentication
++ * - Global error handling for 401/403 (unauthorized)
++ * - Custom ApiError throwing for non-OK responses
++ * 
++ * @param path - The API endpoint path (relative to BASE_URL).
++ * @param init - Optional fetch configuration (method, body, headers, etc.).
++ * @returns A promise that resolves to the parsed JSON response.
++ * @throws {ApiError} If the response is not OK.
++ * @throws {Error} For network failures or other unexpected errors.
++ */
+ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+   const headers = new Headers(init.headers ?? {});
+   headers.set('Accept', 'application/json');
++
++  // Automatically set Content-Type if a body is provided
+   if (init.body && !headers.has('Content-Type')) {
+     headers.set('Content-Type', 'application/json');
+   }
++
++  // Inject the access token if available
+   if (accessToken) {
+     headers.set('Authorization', `Bearer ${accessToken}`);
+   }
+@@ -50,6 +83,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
+     throw error;
+   }
+ 
++  // Handle unauthorized responses by triggering the global handler
+   if (response.status === 401 || response.status === 403) {
+     logger.warn('[apiFetch] unauthorized response', { path, status: response.status });
+     onUnauthorized?.();
+@@ -57,6 +91,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
+     throw new ApiError(response.status, message);
+   }
+ 
++  // Handle other non-OK responses
+   if (!response.ok) {
+     const message = await safeReadMessage(response);
+     throw new ApiError(response.status, message);
+diff --git a/src/services/storage/secureTokenStore.ts b/src/services/storage/secureTokenStore.ts
+index e35b375..2709429 100644
+--- a/src/services/storage/secureTokenStore.ts
++++ b/src/services/storage/secureTokenStore.ts
+@@ -7,6 +7,12 @@ import type { AuthToken } from '@/types/auth';
+ const SERVICE = 'loginapp.auth';
+ const ACCOUNT = 'auth-token';
+ 
++/**
++ * Persists the authentication token securely using React Native Keychain.
++ * 
++ * @param token - The AuthToken object containing access and refresh tokens.
++ * @throws {Error} If saving to the keychain fails.
++ */
+ export async function saveToken(token: AuthToken): Promise<void> {
+   try {
+     await Keychain.setGenericPassword(ACCOUNT, JSON.stringify(token), {
+@@ -18,12 +24,18 @@ export async function saveToken(token: AuthToken): Promise<void> {
+   }
+ }
+ 
++/**
++ * Retrieves the persisted authentication token from the keychain.
++ * 
++ * @returns The stored AuthToken or null if no token is found or an error occurs.
++ */
+ export async function loadToken(): Promise<AuthToken | null> {
+   try {
+     const credentials = await Keychain.getGenericPassword({ service: SERVICE });
+     if (!credentials) {
+       return null;
+     }
++    // Parse the JSON string stored in the password field
+     return JSON.parse(credentials.password) as AuthToken;
+   } catch (error) {
+     logger.error('[secureTokenStore] failed to load token', error);
+@@ -31,6 +43,11 @@ export async function loadToken(): Promise<AuthToken | null> {
+   }
+ }
+ 
++/**
++ * Removes the persisted authentication token from the keychain.
++ * 
++ * @throws {Error} If clearing the keychain fails.
++ */
+ export async function clearToken(): Promise<void> {
+   try {
+     await Keychain.resetGenericPassword({ service: SERVICE });
+
+commit e3983e209fbb22086b50add0a3c524314a04993b
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 21:05:50 2026 +0300
+
+    test(testing): stabilize test environment and colocate test files
+    
+    - Centralize timer and lifecycle management in jest.setup.ts
+    - Optimize React Query configurations for tests to prevent open handles
+    - Relocate test files to __tests__ subdirectories next to implementation
+    - Add IS_TEST and IS_DEV constants for environment-specific logic
+    - Refactor individual tests to use global lifecycle hooks
+---
+ {src/__mocks__ => __mocks__}/svgMock.tsx           |  0
+ __tests__/App.test.tsx                             |  6 +++-
+ jest.config.js                                     |  4 +--
+ jest.setup.ts                                      | 33 ++++++++++++++++++----
+ src/components/auth/__tests__/LoginForm.test.tsx   |  8 ------
+ .../common/Button/__tests__}/ButtonBase.test.tsx   |  2 +-
+ .../Button/__tests__}/PrimaryButton.test.tsx       |  4 +--
+ .../Button/__tests__}/SecondaryButton.test.tsx     |  4 +--
+ .../common/Input/{ => __tests__}/Input.test.tsx    | 10 +------
+ .../components/common/__tests__}/AppText.test.tsx  |  2 +-
+ src/constants/env.ts                               |  2 ++
+ src/providers/queryClient.ts                       | 18 +++++++++---
+ src/screens/__tests__/LoginScreen.test.tsx         |  8 ------
+ src/test-utils/renderWithAuth.tsx                  |  9 ++----
+ src/types/env.d.ts                                 | 12 ++++++++
+ 15 files changed, 73 insertions(+), 49 deletions(-)
+
+diff --git a/src/__mocks__/svgMock.tsx b/__mocks__/svgMock.tsx
+similarity index 100%
+rename from src/__mocks__/svgMock.tsx
+rename to __mocks__/svgMock.tsx
+diff --git a/__tests__/App.test.tsx b/__tests__/App.test.tsx
+index 2380165..aff1e7d 100644
+--- a/__tests__/App.test.tsx
++++ b/__tests__/App.test.tsx
+@@ -11,7 +11,11 @@ import App from '../App';
+ jest.mock('@/navigation/RootNavigator', () => () => null);
+ 
+ test('renders correctly', async () => {
++  let renderer: ReactTestRenderer.ReactTestRenderer;
+   await ReactTestRenderer.act(() => {
+-    ReactTestRenderer.create(<App />);
++    renderer = ReactTestRenderer.create(<App />);
++  });
++  await ReactTestRenderer.act(() => {
++    renderer.unmount();
+   });
+ });
+diff --git a/jest.config.js b/jest.config.js
+index e427d7a..3006e8d 100644
+--- a/jest.config.js
++++ b/jest.config.js
+@@ -1,9 +1,9 @@
+ module.exports = {
+   preset: '@react-native/jest-preset',
+   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+-  forceExit: true,
++
+   moduleNameMapper: {
+-    '\\.svg$': '<rootDir>/src/__mocks__/svgMock.tsx',
++    '\\.svg$': '<rootDir>/__mocks__/svgMock.tsx',
+     '^@/(.*)$': '<rootDir>/src/$1',
+   },
+   transformIgnorePatterns: [
+diff --git a/jest.setup.ts b/jest.setup.ts
+index e511d41..fcb056a 100644
+--- a/jest.setup.ts
++++ b/jest.setup.ts
+@@ -1,3 +1,8 @@
++import { focusManager, onlineManager } from '@tanstack/react-query';
++import { act, cleanup } from '@testing-library/react-native';
++import { queryClient } from '@/providers/queryClient';
++
++// --- Mocks ---
+ jest.mock('react-native-screens', () => ({
+   enableScreens: jest.fn(),
+   screensEnabled: jest.fn(() => true),
+@@ -37,8 +42,8 @@ jest.mock('react-native-safe-area-context', () => {
+ jest.mock('react-native-linear-gradient', () => {
+   const React = require('react');
+   const { View } = require('react-native');
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock: gradient props unavailable without full package types
+-  return (props: any) => React.createElement(View, props, props.children);
++  return ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) =>
++    React.createElement(View, props, children);
+ });
+ 
+ jest.mock('react-native-keychain', () => ({
+@@ -53,11 +58,29 @@ jest.mock('react-native-keychain', () => ({
+   },
+ }));
+ 
++// --- Global Stubs ---
++globalThis.fetch = jest.fn();
++
++// --- React Query Configuration ---
++// Disable React Query's default behavior of attaching global listeners in tests
++onlineManager.setEventListener(() => () => { });
++focusManager.setEventListener(() => () => { });
++
++// --- Lifecycle Hooks ---
+ beforeEach(() => {
+-  jest.spyOn(console, 'debug').mockImplementation(() => {});
+-  jest.spyOn(console, 'warn').mockImplementation(() => {});
++  jest.useFakeTimers();
++  jest.spyOn(console, 'debug').mockImplementation(() => { });
++  jest.spyOn(console, 'warn').mockImplementation(() => { });
+ });
+ 
+-afterEach(() => {
++afterEach(async () => {
++  await queryClient.cancelQueries();
++  queryClient.clear();
++  cleanup(); // Unmount components to stop animations
++  await act(async () => {
++    jest.runAllTimers();
++  });
++  jest.useRealTimers();
++  jest.clearAllMocks();
+   jest.restoreAllMocks();
+ });
+diff --git a/src/components/auth/__tests__/LoginForm.test.tsx b/src/components/auth/__tests__/LoginForm.test.tsx
+index 85111a6..9acdc9d 100644
+--- a/src/components/auth/__tests__/LoginForm.test.tsx
++++ b/src/components/auth/__tests__/LoginForm.test.tsx
+@@ -9,17 +9,9 @@ describe('LoginForm', () => {
+   const mockOnResetError = jest.fn();
+ 
+   beforeEach(() => {
+-    jest.useFakeTimers();
+     jest.clearAllMocks();
+   });
+ 
+-  afterEach(() => {
+-    act(() => {
+-      jest.runOnlyPendingTimers();
+-    });
+-    jest.useRealTimers();
+-  });
+-
+   it('renders correctly', () => {
+     const { getByLabelText, getByText } = render(
+       <LoginForm
+diff --git a/__tests__/components/Button/ButtonBase.test.tsx b/src/components/common/Button/__tests__/ButtonBase.test.tsx
+similarity index 96%
+rename from __tests__/components/Button/ButtonBase.test.tsx
+rename to src/components/common/Button/__tests__/ButtonBase.test.tsx
+index dce8545..5a3929a 100644
+--- a/__tests__/components/Button/ButtonBase.test.tsx
++++ b/src/components/common/Button/__tests__/ButtonBase.test.tsx
+@@ -1,7 +1,7 @@
+ import { View, Pressable } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
+ 
+-import { ButtonBase } from '@/components/common/Button/ButtonBase';
++import { ButtonBase } from '../ButtonBase';
+ 
+ describe('ButtonBase', () => {
+   it('renders correctly', async () => {
+diff --git a/__tests__/components/Button/PrimaryButton.test.tsx b/src/components/common/Button/__tests__/PrimaryButton.test.tsx
+similarity index 91%
+rename from __tests__/components/Button/PrimaryButton.test.tsx
+rename to src/components/common/Button/__tests__/PrimaryButton.test.tsx
+index e24f774..a0c0173 100644
+--- a/__tests__/components/Button/PrimaryButton.test.tsx
++++ b/src/components/common/Button/__tests__/PrimaryButton.test.tsx
+@@ -2,8 +2,8 @@ import React from 'react';
+ 
+ import ReactTestRenderer from 'react-test-renderer';
+ 
+-import { ButtonBase } from '@/components/common/Button/ButtonBase';
+-import { PrimaryButton } from '@/components/common/Button/PrimaryButton';
++import { ButtonBase } from '../ButtonBase';
++import { PrimaryButton } from '../PrimaryButton';
+ 
+ describe('PrimaryButton', () => {
+   it('renders correctly', async () => {
+diff --git a/__tests__/components/Button/SecondaryButton.test.tsx b/src/components/common/Button/__tests__/SecondaryButton.test.tsx
+similarity index 91%
+rename from __tests__/components/Button/SecondaryButton.test.tsx
+rename to src/components/common/Button/__tests__/SecondaryButton.test.tsx
+index db0f8ec..a22df72 100644
+--- a/__tests__/components/Button/SecondaryButton.test.tsx
++++ b/src/components/common/Button/__tests__/SecondaryButton.test.tsx
+@@ -2,8 +2,8 @@ import React from 'react';
+ 
+ import ReactTestRenderer from 'react-test-renderer';
+ 
+-import { ButtonBase } from '@/components/common/Button/ButtonBase';
+-import { SecondaryButton } from '@/components/common/Button/SecondaryButton';
++import { ButtonBase } from '../ButtonBase';
++import { SecondaryButton } from '../SecondaryButton';
+ 
+ describe('SecondaryButton', () => {
+   it('renders correctly', async () => {
+diff --git a/src/components/common/Input/Input.test.tsx b/src/components/common/Input/__tests__/Input.test.tsx
+similarity index 93%
+rename from src/components/common/Input/Input.test.tsx
+rename to src/components/common/Input/__tests__/Input.test.tsx
+index 813fd35..7bf7439 100644
+--- a/src/components/common/Input/Input.test.tsx
++++ b/src/components/common/Input/__tests__/Input.test.tsx
+@@ -2,7 +2,7 @@ import React from 'react';
+ 
+ import { act, fireEvent, render, screen } from '@testing-library/react-native';
+ 
+-import { Input } from './index';
++import { Input } from '../index';
+ 
+ describe('Input', () => {
+   const baseProps = {
+@@ -11,15 +11,7 @@ describe('Input', () => {
+     onChangeText: jest.fn(),
+   };
+ 
+-  beforeEach(() => {
+-    jest.useFakeTimers();
+-  });
+-
+   afterEach(() => {
+-    act(() => {
+-      jest.runOnlyPendingTimers();
+-    });
+-    jest.useRealTimers();
+     jest.clearAllMocks();
+   });
+ 
+diff --git a/__tests__/components/AppText.test.tsx b/src/components/common/__tests__/AppText.test.tsx
+similarity index 96%
+rename from __tests__/components/AppText.test.tsx
+rename to src/components/common/__tests__/AppText.test.tsx
+index 74e6a14..2ce9cf2 100644
+--- a/__tests__/components/AppText.test.tsx
++++ b/src/components/common/__tests__/AppText.test.tsx
+@@ -3,7 +3,7 @@ import React from 'react';
+ import { Text } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
+ 
+-import { AppText } from '@/components/common/AppText';
++import { AppText } from '../AppText';
+ 
+ describe('AppText', () => {
+   it('renders correctly', async () => {
+diff --git a/src/constants/env.ts b/src/constants/env.ts
+new file mode 100644
+index 0000000..bdf1d16
+--- /dev/null
++++ b/src/constants/env.ts
+@@ -0,0 +1,2 @@
++export const IS_TEST = process.env.NODE_ENV === 'test';
++export const IS_DEV = __DEV__;
+diff --git a/src/providers/queryClient.ts b/src/providers/queryClient.ts
+index fdd43da..4cb4063 100644
+--- a/src/providers/queryClient.ts
++++ b/src/providers/queryClient.ts
+@@ -1,6 +1,7 @@
+ import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+ 
+ import { ApiError } from '@/services/api/client';
++import { IS_TEST } from '@/constants/env';
+ 
+ let onUnauthorizedHandler: (() => void) | null = null;
+ 
+@@ -14,12 +15,21 @@ const handleError = (error: unknown): void => {
+   }
+ };
+ 
++const getQueryOptions = () => {
++  // Time constants in milliseconds
++  const STALE_TIME = IS_TEST ? 0 : 1000 * 60 * 5; // 5 minutes
++  const GC_TIME = IS_TEST ? 0 : 1000 * 60 * 30; // 30 minutes
++
++  return {
++    retry: IS_TEST ? 0 : 2,
++    staleTime: STALE_TIME,
++    gcTime: GC_TIME,
++  };
++};
++
+ export const queryClient = new QueryClient({
+   defaultOptions: {
+-    queries: {
+-      retry: 2,
+-      staleTime: 1000 * 60 * 5,
+-    },
++    queries: getQueryOptions(),
+     mutations: {
+       retry: 0,
+     },
+diff --git a/src/screens/__tests__/LoginScreen.test.tsx b/src/screens/__tests__/LoginScreen.test.tsx
+index 0e57cca..79053f7 100644
+--- a/src/screens/__tests__/LoginScreen.test.tsx
++++ b/src/screens/__tests__/LoginScreen.test.tsx
+@@ -29,17 +29,9 @@ const routeStub = { key: 'login', name: 'Login' as const, params: undefined } as
+ 
+ describe('LoginScreen', () => {
+   beforeEach(() => {
+-    jest.useFakeTimers();
+     jest.clearAllMocks();
+   });
+ 
+-  afterEach(() => {
+-    act(() => {
+-      jest.runOnlyPendingTimers();
+-    });
+-    jest.useRealTimers();
+-  });
+-
+   it('renders inputs and does not submit when fields are empty', async () => {
+     const { getByLabelText, getByText } = renderWithAuth(
+       <LoginScreen navigation={navigationStub} route={routeStub} />,
+diff --git a/src/test-utils/renderWithAuth.tsx b/src/test-utils/renderWithAuth.tsx
+index 36defe9..ade7370 100644
+--- a/src/test-utils/renderWithAuth.tsx
++++ b/src/test-utils/renderWithAuth.tsx
+@@ -4,14 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import { render, type RenderOptions, type RenderAPI } from '@testing-library/react-native';
+ 
+ import { AuthProvider } from '@/providers/AuthProvider';
++import { queryClient } from '@/providers/queryClient';
+ 
+ export function createTestQueryClient(): QueryClient {
+-  return new QueryClient({
+-    defaultOptions: {
+-      queries: { retry: false, gcTime: 0, staleTime: 0 },
+-      mutations: { retry: false },
+-    },
+-  });
++  queryClient.clear();
++  return queryClient;
+ }
+ 
+ type WrapperOptions = {
+diff --git a/src/types/env.d.ts b/src/types/env.d.ts
+new file mode 100644
+index 0000000..a4eb726
+--- /dev/null
++++ b/src/types/env.d.ts
+@@ -0,0 +1,12 @@
++declare namespace NodeJS {
++  interface ProcessEnv {
++    NODE_ENV: 'development' | 'production' | 'test';
++  }
++  interface Process {
++    env: ProcessEnv;
++  }
++}
++
++declare var process: NodeJS.Process;
++
++declare const __DEV__: boolean;
+
+commit 01044485a895c4b2915b6d2811c0de6cce4799e1
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 20:03:06 2026 +0300
+
+    docs(rules): add no-premature-optimization guideline
+---
+ .ai-factory/RULES.md                                  |  6 ++++++
+ .ai-factory/skill-context/aif-best-practices/SKILL.md | 10 ++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/.ai-factory/RULES.md b/.ai-factory/RULES.md
+index 9c78a7b..91a5ba2 100644
+--- a/.ai-factory/RULES.md
++++ b/.ai-factory/RULES.md
+@@ -82,6 +82,12 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
+ - Constants (non-enum): `SCREAMING_SNAKE_CASE`.
+ - Enum members: `SCREAMING_SNAKE_CASE` (as in `Routes.LOGIN`).
+ 
++## Optimization
++
++- **NO PREMATURE OPTIMIZATION**: Avoid using `useCallback` or `useMemo` unless there is a measured performance bottleneck or a specific requirement for reference stability (e.g., dependencies of other hooks or `React.memo` components).
++  - In most cases, the overhead of dependency tracking in these hooks exceeds the cost of re-creating small functions or objects.
++  - If the consumer of a hook passes non-memoized functions (like inline arrows), `useCallback`/`useMemo` inside the hook are useless and should be avoided.
++
+ ## Commits
+ 
+ - Follow Conventional Commits: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`.
+diff --git a/.ai-factory/skill-context/aif-best-practices/SKILL.md b/.ai-factory/skill-context/aif-best-practices/SKILL.md
+new file mode 100644
+index 0000000..0ecc1a2
+--- /dev/null
++++ b/.ai-factory/skill-context/aif-best-practices/SKILL.md
+@@ -0,0 +1,10 @@
++---
++name: aif-best-practices
++description: Project-specific best practices context and overrides for the aif-best-practices skill.
++---
++
++# Project Rules: aif-best-practices
++
++- **AVOID PREMATURE OPTIMIZATION**: Do not use `useCallback` or `useMemo` by default. Only use them when there is a demonstrated performance issue or a clear need for reference stability (e.g., when a function is passed as a dependency to another hook or to a component wrapped in `React.memo`).
++- **SIMPLICITY FIRST**: Prioritize readable and straightforward code over complex memoization patterns.
++- **HOOK INPUTS**: If a hook receives non-memoized functions or objects as arguments, avoid using those arguments as dependencies in internal `useCallback`/`useMemo` calls, as it will cause them to re-run on every render regardless.
+
+commit aea404dcdc3bf6cd2c7746930b86ac7df2e729a7
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 20:03:01 2026 +0300
+
+    refactor(auth): extract LoginForm, useForm hook, and ErrorMessage component
+---
+ src/assets/icons/info.svg                          |   5 +
+ src/components/auth/LoginForm.tsx                  |  85 ++++++++++++++++
+ src/components/auth/__tests__/LoginForm.test.tsx   |  95 ++++++++++++++++++
+ .../common/ErrorMessage/ErrorMessage.styles.ts     |  24 +++++
+ .../common/ErrorMessage/ErrorMessage.tsx           |  27 ++++++
+ .../ErrorMessage/__tests__/ErrorMessage.test.tsx   |  27 ++++++
+ src/components/common/ErrorMessage/index.ts        |   1 +
+ src/hooks/__tests__/useForm.test.ts                | 108 +++++++++++++++++++++
+ src/hooks/useForm.ts                               |  63 ++++++++++++
+ src/screens/LoginScreen.tsx                        |  70 ++-----------
+ 10 files changed, 442 insertions(+), 63 deletions(-)
+
+diff --git a/src/assets/icons/info.svg b/src/assets/icons/info.svg
+new file mode 100644
+index 0000000..3d74a7f
+--- /dev/null
++++ b/src/assets/icons/info.svg
+@@ -0,0 +1,5 @@
++<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++  <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" />
++  <path d="M12 7V13" stroke="white" stroke-width="2" stroke-linecap="round" />
++  <path d="M12 17H12.01" stroke="white" stroke-width="2" stroke-linecap="round" />
++</svg>
+diff --git a/src/components/auth/LoginForm.tsx b/src/components/auth/LoginForm.tsx
+new file mode 100644
+index 0000000..64b0239
+--- /dev/null
++++ b/src/components/auth/LoginForm.tsx
+@@ -0,0 +1,85 @@
++import React from 'react';
++
++import { Keyboard, StyleSheet, View } from 'react-native';
++
++import { PrimaryButton } from '@/components/common/Button';
++import { ErrorMessage } from '@/components/common/ErrorMessage';
++import { Input } from '@/components/common/Input';
++import { ErrorMessages } from '@/constants/messages';
++import { useForm } from '@/hooks/useForm';
++import { resolveErrorMessage } from '@/utils/error';
++
++import { Spacing } from '@/theme/spacing';
++
++import type { LoginPayload } from '@/types/auth';
++
++interface LoginFormProps {
++  onSubmit: (values: LoginPayload) => void;
++  isLoading: boolean;
++  error: Error | null;
++  onResetError: () => void;
++}
++
++export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFormProps) => {
++  const { values, handleChange, handleSubmit, isValid } = useForm<LoginPayload>({
++    initialValues: { username: '', password: '' },
++    onSubmit: (formValues) => {
++      Keyboard.dismiss();
++      onSubmit(formValues);
++    },
++    onValueChange: () => {
++      if (error) {
++        onResetError();
++      }
++    },
++    validate: (formValues) =>
++      formValues.username.length > 0 && formValues.password.length > 0 && !isLoading,
++  });
++
++  const errorMessage = resolveErrorMessage(error, ErrorMessages.LOGIN_FAILURE);
++
++  return (
++    <View style={styles.container}>
++      <Input
++        label="Username"
++        value={values.username}
++        onChangeText={handleChange('username')}
++        onClear={() => handleChange('username')('')}
++        autoCapitalize="none"
++        autoCorrect={false}
++        style={styles.input}
++        testID="username-input"
++      />
++
++      <Input
++        label="Password"
++        value={values.password}
++        onChangeText={handleChange('password')}
++        onClear={() => handleChange('password')('')}
++        secureTextEntry
++        autoCapitalize="none"
++        autoCorrect={false}
++        style={styles.input}
++        testID="password-input"
++      />
++
++      <ErrorMessage message={errorMessage} testID="login-error" />
++
++      <PrimaryButton
++        title="Login"
++        onPress={handleSubmit}
++        disabled={!isValid}
++        isLoading={isLoading}
++      />
++    </View>
++  );
++};
++
++const styles = StyleSheet.create({
++  container: {
++    width: '100%',
++  },
++  input: {
++    marginBottom: Spacing.md,
++  },
++});
+diff --git a/src/components/auth/__tests__/LoginForm.test.tsx b/src/components/auth/__tests__/LoginForm.test.tsx
+new file mode 100644
+index 0000000..85111a6
+--- /dev/null
++++ b/src/components/auth/__tests__/LoginForm.test.tsx
+@@ -0,0 +1,95 @@
++import React from 'react';
++
++import { act, fireEvent, render } from '@testing-library/react-native';
++
++import { LoginForm } from '@/components/auth/LoginForm';
++
++describe('LoginForm', () => {
++  const mockOnSubmit = jest.fn();
++  const mockOnResetError = jest.fn();
++
++  beforeEach(() => {
++    jest.useFakeTimers();
++    jest.clearAllMocks();
++  });
++
++  afterEach(() => {
++    act(() => {
++      jest.runOnlyPendingTimers();
++    });
++    jest.useRealTimers();
++  });
++
++  it('renders correctly', () => {
++    const { getByLabelText, getByText } = render(
++      <LoginForm
++        onSubmit={mockOnSubmit}
++        isLoading={false}
++        error={null}
++        onResetError={mockOnResetError}
++      />,
++    );
++
++    expect(getByLabelText('Username')).toBeTruthy();
++    expect(getByLabelText('Password')).toBeTruthy();
++    expect(getByText('Login')).toBeTruthy();
++  });
++
++  it('calls onSubmit when fields are filled and button is pressed', () => {
++    const { getByLabelText, getByText } = render(
++      <LoginForm
++        onSubmit={mockOnSubmit}
++        isLoading={false}
++        error={null}
++        onResetError={mockOnResetError}
++      />,
++    );
++
++    act(() => {
++      fireEvent.changeText(getByLabelText('Username'), 'testuser');
++      fireEvent.changeText(getByLabelText('Password'), 'password123');
++    });
++
++    act(() => {
++      fireEvent.press(getByText('Login'));
++    });
++
++    expect(mockOnSubmit).toHaveBeenCalledWith({
++      username: 'testuser',
++      password: 'password123',
++    });
++  });
++
++  it('disables login button when fields are empty', () => {
++    const { getByText } = render(
++      <LoginForm
++        onSubmit={mockOnSubmit}
++        isLoading={false}
++        error={null}
++        onResetError={mockOnResetError}
++      />,
++    );
++
++    const loginButton = getByText('Login');
++    act(() => {
++      fireEvent.press(loginButton);
++    });
++    expect(mockOnSubmit).not.toHaveBeenCalled();
++  });
++
++  it('calls onResetError when input value changes and error exists', () => {
++    const { getByLabelText } = render(
++      <LoginForm
++        onSubmit={mockOnSubmit}
++        isLoading={false}
++        error={new Error('Auth failed')}
++        onResetError={mockOnResetError}
++      />,
++    );
++
++    act(() => {
++      fireEvent.changeText(getByLabelText('Username'), 'a');
++    });
++    expect(mockOnResetError).toHaveBeenCalledTimes(1);
++  });
++});
+diff --git a/src/components/common/ErrorMessage/ErrorMessage.styles.ts b/src/components/common/ErrorMessage/ErrorMessage.styles.ts
+new file mode 100644
+index 0000000..774229d
+--- /dev/null
++++ b/src/components/common/ErrorMessage/ErrorMessage.styles.ts
+@@ -0,0 +1,24 @@
++import { StyleSheet } from 'react-native';
++
++import { Colors } from '@/theme/colors';
++import { Spacing } from '@/theme/spacing';
++
++export const styles = StyleSheet.create({
++  container: {
++    flexDirection: 'row',
++    alignItems: 'center',
++    backgroundColor: Colors.danger,
++    padding: Spacing.md,
++    borderRadius: Spacing.radius.md,
++    marginBottom: Spacing.md,
++  },
++  iconContainer: {
++    marginRight: Spacing.sm,
++  },
++  message: {
++    flex: 1,
++    color: Colors.WHITE,
++    fontSize: 14,
++    fontWeight: '500',
++  },
++});
+diff --git a/src/components/common/ErrorMessage/ErrorMessage.tsx b/src/components/common/ErrorMessage/ErrorMessage.tsx
+new file mode 100644
+index 0000000..0164b18
+--- /dev/null
++++ b/src/components/common/ErrorMessage/ErrorMessage.tsx
+@@ -0,0 +1,27 @@
++import React from 'react';
++import { View } from 'react-native';
++import InfoIcon from '@/assets/icons/info.svg';
++
++import { AppText } from '@/components/common/AppText';
++
++import { styles } from './ErrorMessage.styles';
++
++interface ErrorMessageProps {
++  message: string | null;
++  testID?: string;
++}
++
++export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, testID }) => {
++  if (!message) return null;
++
++  return (
++    <View style={styles.container} testID={testID}>
++      <View style={styles.iconContainer}>
++        <InfoIcon />
++      </View>
++      <AppText style={styles.message}>
++        {message}
++      </AppText>
++    </View>
++  );
++};
+diff --git a/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx b/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx
+new file mode 100644
+index 0000000..10448a6
+--- /dev/null
++++ b/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx
+@@ -0,0 +1,27 @@
++import React from 'react';
++
++import { render } from '@testing-library/react-native';
++
++import { ErrorMessage } from '../ErrorMessage';
++
++describe('ErrorMessage', () => {
++  it('renders the message correctly', () => {
++    const message = "User doesn't exist";
++    const { getByText } = render(<ErrorMessage message={message} />);
++
++    expect(getByText(message)).toBeTruthy();
++  });
++
++  it('renders nothing when message is empty', () => {
++    const { queryByTestId } = render(<ErrorMessage message="" testID="error-container" />);
++
++    expect(queryByTestId('error-container')).toBeNull();
++  });
++
++  it('applies testID correctly', () => {
++    const testID = 'login-error';
++    const { getByTestId } = render(<ErrorMessage message="Error" testID={testID} />);
++
++    expect(getByTestId(testID)).toBeTruthy();
++  });
++});
+diff --git a/src/components/common/ErrorMessage/index.ts b/src/components/common/ErrorMessage/index.ts
+new file mode 100644
+index 0000000..3dee962
+--- /dev/null
++++ b/src/components/common/ErrorMessage/index.ts
+@@ -0,0 +1 @@
++export * from './ErrorMessage';
+diff --git a/src/hooks/__tests__/useForm.test.ts b/src/hooks/__tests__/useForm.test.ts
+new file mode 100644
+index 0000000..2dbff8c
+--- /dev/null
++++ b/src/hooks/__tests__/useForm.test.ts
+@@ -0,0 +1,108 @@
++import { renderHook, act } from '@testing-library/react-native';
++import { useForm } from '../useForm';
++
++describe('useForm', () => {
++  const initialValues = { username: '', password: '' };
++  const onSubmit = jest.fn() as jest.Mock<void, [typeof initialValues]>;
++
++  beforeEach(() => {
++    jest.clearAllMocks();
++  });
++
++  it('should initialize with initial values', () => {
++    const { result } = renderHook(() =>
++      useForm({ initialValues, onSubmit })
++    );
++
++    expect(result.current.values).toEqual(initialValues);
++  });
++
++  it('should update values when handleChange is called', () => {
++    const { result } = renderHook(() =>
++      useForm({ initialValues, onSubmit })
++    );
++
++    act(() => {
++      result.current.handleChange('username')('testuser');
++    });
++
++    expect(result.current.values.username).toBe('testuser');
++  });
++
++  it('should call onSubmit with current values when handleSubmit is called', () => {
++    const { result } = renderHook(() =>
++      useForm({ initialValues, onSubmit })
++    );
++
++    act(() => {
++      result.current.handleChange('username')('testuser');
++      result.current.handleChange('password')('password123');
++    });
++
++    act(() => {
++      result.current.handleSubmit();
++    });
++
++    expect(onSubmit).toHaveBeenCalledWith({
++      username: 'testuser',
++      password: 'password123',
++    });
++  });
++
++  it('should call onValueChange when a field value changes', () => {
++    const onValueChange = jest.fn();
++    const { result } = renderHook(() =>
++      useForm({ initialValues, onSubmit, onValueChange })
++    );
++
++    act(() => {
++      result.current.handleChange('username')('testuser');
++    });
++
++    expect(onValueChange).toHaveBeenCalled();
++  });
++
++  it('should return correct isValid state based on validate function', () => {
++    const validate = (values: typeof initialValues) =>
++      values.username.length > 0 && values.password.length > 0;
++
++    interface HookProps {
++      valFunc: (values: typeof initialValues) => boolean;
++    }
++
++    const { result } = renderHook(
++      ({ valFunc }: HookProps) => useForm<typeof initialValues>({ initialValues, onSubmit, validate: valFunc }),
++      {
++        initialProps: { valFunc: validate },
++      }
++    );
++
++    expect(result.current.isValid).toBe(false);
++
++    act(() => {
++      result.current.handleChange('username')('testuser');
++    });
++    expect(result.current.isValid).toBe(false);
++
++    act(() => {
++      result.current.handleChange('password')('password123');
++    });
++    expect(result.current.isValid).toBe(true);
++  });
++
++  it('should reset values to initial state when reset is called', () => {
++    const { result } = renderHook(() =>
++      useForm({ initialValues, onSubmit })
++    );
++
++    act(() => {
++      result.current.handleChange('username')('testuser');
++    });
++    expect(result.current.values.username).toBe('testuser');
++
++    act(() => {
++      result.current.reset();
++    });
++    expect(result.current.values).toEqual(initialValues);
++  });
++});
+diff --git a/src/hooks/useForm.ts b/src/hooks/useForm.ts
+new file mode 100644
+index 0000000..bdfcfb1
+--- /dev/null
++++ b/src/hooks/useForm.ts
+@@ -0,0 +1,63 @@
++import { useState } from 'react';
++
++interface UseFormOptions<T> {
++  initialValues: T;
++  onSubmit: (values: T) => void;
++  onValueChange?: () => void;
++  validate?: (values: T) => boolean;
++}
++
++/**
++ * A reusable hook for managing form state and submission.
++ * 
++ * @param initialValues - The initial values for the form fields.
++ * @param onSubmit - Callback function called when the form is submitted.
++ * @param onValueChange - Optional callback called whenever any field value changes.
++ * @param validate - Optional function to validate the form values.
++ */
++export function useForm<T extends Record<string, unknown>>({
++  initialValues,
++  onSubmit,
++  onValueChange,
++  validate,
++}: UseFormOptions<T>) {
++  const [values, setValues] = useState<T>(initialValues);
++
++  const handleChange =
++    <K extends keyof T>(name: K) =>
++      (value: T[K]) => {
++        setValues((prev) => ({
++          ...prev,
++          [name]: value,
++        }));
++        onValueChange?.();
++      };
++
++  const setFieldValue = <K extends keyof T>(name: K, value: T[K]) => {
++    setValues((prev) => ({
++      ...prev,
++      [name]: value,
++    }));
++    onValueChange?.();
++  };
++
++  const handleSubmit = () => {
++    onSubmit(values);
++  };
++
++  const reset = () => {
++    setValues(initialValues);
++  };
++
++  const isValid = validate ? validate(values) : true;
++
++  return {
++    handleChange,
++    handleSubmit,
++    isValid,
++    reset,
++    setFieldValue,
++    setValues,
++    values,
++  };
++}
+diff --git a/src/screens/LoginScreen.tsx b/src/screens/LoginScreen.tsx
+index 28cee91..c5e4b16 100644
+--- a/src/screens/LoginScreen.tsx
++++ b/src/screens/LoginScreen.tsx
+@@ -1,79 +1,31 @@
+-import React, { useState } from 'react';
++import React from 'react';
+ 
+ import { NativeStackScreenProps } from '@react-navigation/native-stack';
+-import { Keyboard, StyleSheet, View, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
++import { Keyboard, StyleSheet, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+ 
+-import { AppText } from '@/components/common/AppText';
+-import { PrimaryButton } from '@/components/common/Button';
+-import { Input } from '@/components/common/Input';
+-import { ErrorMessages } from '@/constants/messages';
++import { LoginForm } from '@/components/auth/LoginForm';
+ import { Routes } from '@/constants/routes';
+ import { useLogin } from '@/hooks/useLogin';
+ import { AuthStackParamList } from '@/navigation/RootNavigator';
+-import { resolveErrorMessage } from '@/utils/error';
+ 
+-import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ 
+ type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;
+ 
+ export default function LoginScreen(_: Props) {
+-  const [username, setUsername] = useState('');
+-  const [password, setPassword] = useState('');
+-
+   const { mutate, isPending, error, reset } = useLogin();
+ 
+-  const handleSubmit = (): void => {
+-    Keyboard.dismiss();
+-    if (error) {
+-      reset();
+-    }
+-    mutate({ username, password });
+-  };
+-
+-  const errorMessage = resolveErrorMessage(error, ErrorMessages.LOGIN_FAILURE);
+-  const canSubmit = username.length > 0 && password.length > 0 && !isPending;
+-
+   return (
+     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+       <KeyboardAvoidingView
+         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+         style={styles.container}
+       >
+-        <Input
+-          label="Username"
+-          value={username}
+-          onChangeText={setUsername}
+-          onClear={() => setUsername('')}
+-          autoCapitalize="none"
+-          autoCorrect={false}
+-          style={styles.input}
+-          testID="username-input"
+-        />
+-
+-        <Input
+-          label="Password"
+-          value={password}
+-          onChangeText={setPassword}
+-          onClear={() => setPassword('')}
+-          secureTextEntry
+-          autoCapitalize="none"
+-          autoCorrect={false}
+-          style={styles.input}
+-          testID="password-input"
+-        />
+-
+-        {errorMessage && (
+-          <AppText style={styles.errorMessage} testID="login-error">
+-            {errorMessage}
+-          </AppText>
+-        )}
+-
+-        <PrimaryButton
+-          title="Login"
+-          onPress={handleSubmit}
+-          disabled={!canSubmit}
++        <LoginForm
++          onSubmit={mutate}
+           isLoading={isPending}
++          error={error}
++          onResetError={reset}
+         />
+       </KeyboardAvoidingView>
+     </TouchableWithoutFeedback>
+@@ -86,12 +38,4 @@ const styles = StyleSheet.create({
+     paddingHorizontal: Spacing.screenPadding,
+     justifyContent: 'center',
+   },
+-  input: {
+-    marginBottom: Spacing.md,
+-  },
+-  errorMessage: {
+-    color: Colors.danger,
+-    textAlign: 'center',
+-    marginBottom: Spacing.md,
+-  },
+ });
+
+commit 837494140a6972b7a037a065543876dfdbe3193c
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 19:21:15 2026 +0300
+
+    fix(login): implement keyboard dismissal and avoidance
+    
+    Wrap screen content in TouchableWithoutFeedback to dismiss the keyboard when
+    tapping outside, and add KeyboardAvoidingView to prevent the keyboard from
+    covering inputs.
+---
+ src/screens/LoginScreen.tsx | 75 ++++++++++++++++++++++++---------------------
+ 1 file changed, 40 insertions(+), 35 deletions(-)
+
+diff --git a/src/screens/LoginScreen.tsx b/src/screens/LoginScreen.tsx
+index 82e9218..28cee91 100644
+--- a/src/screens/LoginScreen.tsx
++++ b/src/screens/LoginScreen.tsx
+@@ -1,7 +1,7 @@
+ import React, { useState } from 'react';
+ 
+ import { NativeStackScreenProps } from '@react-navigation/native-stack';
+-import { Keyboard, StyleSheet, View } from 'react-native';
++import { Keyboard, StyleSheet, View, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+ 
+ import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton } from '@/components/common/Button';
+@@ -35,43 +35,48 @@ export default function LoginScreen(_: Props) {
+   const canSubmit = username.length > 0 && password.length > 0 && !isPending;
+ 
+   return (
+-    <View style={styles.container}>
+-      <Input
+-        label="Username"
+-        value={username}
+-        onChangeText={setUsername}
+-        onClear={() => setUsername('')}
+-        autoCapitalize="none"
+-        autoCorrect={false}
+-        style={styles.input}
+-        testID="username-input"
+-      />
++    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
++      <KeyboardAvoidingView
++        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
++        style={styles.container}
++      >
++        <Input
++          label="Username"
++          value={username}
++          onChangeText={setUsername}
++          onClear={() => setUsername('')}
++          autoCapitalize="none"
++          autoCorrect={false}
++          style={styles.input}
++          testID="username-input"
++        />
+ 
+-      <Input
+-        label="Password"
+-        value={password}
+-        onChangeText={setPassword}
+-        onClear={() => setPassword('')}
+-        secureTextEntry
+-        autoCapitalize="none"
+-        autoCorrect={false}
+-        style={styles.input}
+-        testID="password-input"
+-      />
++        <Input
++          label="Password"
++          value={password}
++          onChangeText={setPassword}
++          onClear={() => setPassword('')}
++          secureTextEntry
++          autoCapitalize="none"
++          autoCorrect={false}
++          style={styles.input}
++          testID="password-input"
++        />
+ 
+-      {errorMessage && (
+-        <AppText style={styles.errorMessage} testID="login-error">
+-          {errorMessage}
+-        </AppText>
+-      )}
++        {errorMessage && (
++          <AppText style={styles.errorMessage} testID="login-error">
++            {errorMessage}
++          </AppText>
++        )}
+ 
+-      <PrimaryButton
+-        title="Login"
+-        onPress={handleSubmit}
+-        disabled={!canSubmit}
+-        isLoading={isPending}
+-      />
+-    </View>
++        <PrimaryButton
++          title="Login"
++          onPress={handleSubmit}
++          disabled={!canSubmit}
++          isLoading={isPending}
++        />
++      </KeyboardAvoidingView>
++    </TouchableWithoutFeedback>
+   );
+ }
+ 
+
+commit 530ec9eae62feccb50021c5ec60128a714841bed
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 19:12:46 2026 +0300
+
+    test: suppress console leaks, act() warnings, and open handle noise
+    
+    Globally silence console.debug and console.warn in jest.setup.ts.
+    Add fake timer teardown in LoginScreen.test.tsx to fix Animated act()
+    warnings. Enable forceExit in jest.config.js to eliminate the
+    "Jest did not exit" warning from open handles.
+---
+ jest.config.js                             |  1 +
+ jest.setup.ts                              |  9 +++++++++
+ src/screens/__tests__/LoginScreen.test.tsx | 10 +++++++++-
+ 3 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/jest.config.js b/jest.config.js
+index b251880..e427d7a 100644
+--- a/jest.config.js
++++ b/jest.config.js
+@@ -1,6 +1,7 @@
+ module.exports = {
+   preset: '@react-native/jest-preset',
+   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
++  forceExit: true,
+   moduleNameMapper: {
+     '\\.svg$': '<rootDir>/src/__mocks__/svgMock.tsx',
+     '^@/(.*)$': '<rootDir>/src/$1',
+diff --git a/jest.setup.ts b/jest.setup.ts
+index 1d3582f..e511d41 100644
+--- a/jest.setup.ts
++++ b/jest.setup.ts
+@@ -52,3 +52,12 @@ jest.mock('react-native-keychain', () => ({
+     RSA: 'KeystoreRSAECB',
+   },
+ }));
++
++beforeEach(() => {
++  jest.spyOn(console, 'debug').mockImplementation(() => {});
++  jest.spyOn(console, 'warn').mockImplementation(() => {});
++});
++
++afterEach(() => {
++  jest.restoreAllMocks();
++});
+diff --git a/src/screens/__tests__/LoginScreen.test.tsx b/src/screens/__tests__/LoginScreen.test.tsx
+index 4cfd100..0e57cca 100644
+--- a/src/screens/__tests__/LoginScreen.test.tsx
++++ b/src/screens/__tests__/LoginScreen.test.tsx
+@@ -1,6 +1,6 @@
+ import React from 'react';
+ 
+-import { fireEvent, waitFor } from '@testing-library/react-native';
++import { act, fireEvent, waitFor } from '@testing-library/react-native';
+ 
+ import LoginScreen from '@/screens/LoginScreen';
+ import * as authService from '@/services/api/auth';
+@@ -29,9 +29,17 @@ const routeStub = { key: 'login', name: 'Login' as const, params: undefined } as
+ 
+ describe('LoginScreen', () => {
+   beforeEach(() => {
++    jest.useFakeTimers();
+     jest.clearAllMocks();
+   });
+ 
++  afterEach(() => {
++    act(() => {
++      jest.runOnlyPendingTimers();
++    });
++    jest.useRealTimers();
++  });
++
+   it('renders inputs and does not submit when fields are empty', async () => {
+     const { getByLabelText, getByText } = renderWithAuth(
+       <LoginScreen navigation={navigationStub} route={routeStub} />,
+
+commit 5c70cd78abc92dd2af222921ee25be63ace24221
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 18:26:37 2026 +0300
+
+    docs(plans): mark T10-T12 complete in auth-flow plan
+---
+ .ai-factory/plans/feature-auth-flow.md | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/.ai-factory/plans/feature-auth-flow.md b/.ai-factory/plans/feature-auth-flow.md
+index 158b250..92ceb7c 100644
+--- a/.ai-factory/plans/feature-auth-flow.md
++++ b/.ai-factory/plans/feature-auth-flow.md
+@@ -186,9 +186,9 @@ Conventional Commits, scope-prefixed. Each checkpoint groups logically related t
+ - [x] T7 — Split RootNavigator into AuthStack and AppStack
+ - [x] T8 — Create useLogin mutation hook
+ - [x] T9 — Wire LoginScreen to useLogin
+-- [ ] T10 — Create useProfile query hook
+-- [ ] T11 — Update ProfileScreen with user data and logout
+-- [ ] T12 — Cover hooks, provider, and screens with tests
++- [x] T10 — Create useProfile query hook
++- [x] T11 — Update ProfileScreen with user data and logout
++- [x] T12 — Cover hooks, provider, and screens with tests
+ 
+ ## Out of scope (explicit)
+ 
+
+commit 2c9b733cf54f3cfb158b4ae4d1ab8b0d9a7f150e
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 18:25:45 2026 +0300
+
+    style: fix import order in tests and source files
+    
+    Correct blank-line separators between import groups across
+    test files and source files to match the project import
+    convention (global → absolute → relative → assets).
+---
+ __tests__/components/AppText.test.tsx                | 2 ++
+ __tests__/components/Button/ButtonBase.test.tsx      | 1 +
+ __tests__/components/Button/PrimaryButton.test.tsx   | 4 +++-
+ __tests__/components/Button/SecondaryButton.test.tsx | 4 +++-
+ src/__mocks__/svgMock.tsx                            | 1 +
+ src/components/common/Input/InputLabel.tsx           | 1 -
+ src/types/svg.d.ts                                   | 1 +
+ 7 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/__tests__/components/AppText.test.tsx b/__tests__/components/AppText.test.tsx
+index 172012c..74e6a14 100644
+--- a/__tests__/components/AppText.test.tsx
++++ b/__tests__/components/AppText.test.tsx
+@@ -1,6 +1,8 @@
+ import React from 'react';
++
+ import { Text } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
++
+ import { AppText } from '@/components/common/AppText';
+ 
+ describe('AppText', () => {
+diff --git a/__tests__/components/Button/ButtonBase.test.tsx b/__tests__/components/Button/ButtonBase.test.tsx
+index e1cf169..dce8545 100644
+--- a/__tests__/components/Button/ButtonBase.test.tsx
++++ b/__tests__/components/Button/ButtonBase.test.tsx
+@@ -1,5 +1,6 @@
+ import { View, Pressable } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
++
+ import { ButtonBase } from '@/components/common/Button/ButtonBase';
+ 
+ describe('ButtonBase', () => {
+diff --git a/__tests__/components/Button/PrimaryButton.test.tsx b/__tests__/components/Button/PrimaryButton.test.tsx
+index 055fb2e..e24f774 100644
+--- a/__tests__/components/Button/PrimaryButton.test.tsx
++++ b/__tests__/components/Button/PrimaryButton.test.tsx
+@@ -1,7 +1,9 @@
+ import React from 'react';
++
+ import ReactTestRenderer from 'react-test-renderer';
+-import { PrimaryButton } from '@/components/common/Button/PrimaryButton';
++
+ import { ButtonBase } from '@/components/common/Button/ButtonBase';
++import { PrimaryButton } from '@/components/common/Button/PrimaryButton';
+ 
+ describe('PrimaryButton', () => {
+   it('renders correctly', async () => {
+diff --git a/__tests__/components/Button/SecondaryButton.test.tsx b/__tests__/components/Button/SecondaryButton.test.tsx
+index fdbe4de..db0f8ec 100644
+--- a/__tests__/components/Button/SecondaryButton.test.tsx
++++ b/__tests__/components/Button/SecondaryButton.test.tsx
+@@ -1,7 +1,9 @@
+ import React from 'react';
++
+ import ReactTestRenderer from 'react-test-renderer';
+-import { SecondaryButton } from '@/components/common/Button/SecondaryButton';
++
+ import { ButtonBase } from '@/components/common/Button/ButtonBase';
++import { SecondaryButton } from '@/components/common/Button/SecondaryButton';
+ 
+ describe('SecondaryButton', () => {
+   it('renders correctly', async () => {
+diff --git a/src/__mocks__/svgMock.tsx b/src/__mocks__/svgMock.tsx
+index 9f19afb..0fe5388 100644
+--- a/src/__mocks__/svgMock.tsx
++++ b/src/__mocks__/svgMock.tsx
+@@ -1,4 +1,5 @@
+ import React from 'react';
++
+ import { View } from 'react-native';
+ 
+ const SvgMock = (props: React.ComponentProps<typeof View>) => <View {...props} />;
+diff --git a/src/components/common/Input/InputLabel.tsx b/src/components/common/Input/InputLabel.tsx
+index 2a05879..3e19a43 100644
+--- a/src/components/common/Input/InputLabel.tsx
++++ b/src/components/common/Input/InputLabel.tsx
+@@ -3,7 +3,6 @@ import React, { useEffect, useRef } from 'react';
+ import { Animated, StyleProp, TextStyle } from 'react-native';
+ 
+ import { AppText } from '@/components/common/AppText';
+-
+ import { Spacing, Timing, Typography } from '@/theme';
+ 
+ 
+diff --git a/src/types/svg.d.ts b/src/types/svg.d.ts
+index 0026951..e3cae26 100644
+--- a/src/types/svg.d.ts
++++ b/src/types/svg.d.ts
+@@ -1,5 +1,6 @@
+ declare module '*.svg' {
+   import React from 'react';
++
+   import { SvgProps } from 'react-native-svg';
+ 
+   const content: React.FC<SvgProps>;
+
+commit 1998a93322135e85e73c08b7a338163ac3d06429
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 18:23:02 2026 +0300
+
+    docs(auth): add auth-flow feature page and link from README
+    
+    Document the full Phase 2 auth pipeline: HTTP client, auth service,
+    secure token storage, AuthProvider hydration/login/logout semantics,
+    state-driven RootNavigator, useLogin/useProfile hooks, login and
+    profile screen behaviour, 401/403 session invalidation paths, and
+    the test layout.
+---
+ README.md         |   6 +++
+ docs/auth-flow.md | 153 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 159 insertions(+)
+
+diff --git a/README.md b/README.md
+index 3e2c3f8..8aa503c 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,11 @@
+ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+ 
++## Documentation
++
++| Topic | Page |
++| --- | --- |
++| Authentication flow (login, secure token storage, 401/403 invalidation, protected routing) | [docs/auth-flow.md](docs/auth-flow.md) |
++
+ # Getting Started
+ 
+ > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+diff --git a/docs/auth-flow.md b/docs/auth-flow.md
+new file mode 100644
+index 0000000..24f4003
+--- /dev/null
++++ b/docs/auth-flow.md
+@@ -0,0 +1,153 @@
++# Authentication Flow
++
++LoginApp's authentication is built on the [DummyJSON Auth API](https://dummyjson.com/docs/auth). The flow is layered: a typed HTTP client at the bottom, a service that calls it, an `AuthProvider` that owns auth state, and a `RootNavigator` that switches between an authenticated and unauthenticated stack based on that state.
++
++## Summary
++
++- **Storage:** access/refresh tokens persist to the iOS Keychain / Android Keystore via `react-native-keychain`. `AsyncStorage` is **never** used for tokens.
++- **Hydration:** on app start, `AuthProvider` reads the stored token, calls `GET /auth/me`, and only then renders the navigator. Failed hydration clears the keychain and falls through to `AuthStack`.
++- **Routing:** state-driven. `RootNavigator` reads `useAuth()` and renders `AppStack` (Profile) when a token is present, otherwise `AuthStack` (Home, Login). Screens never call `navigate(Login)` after logout — the stack swap happens automatically when state changes.
++- **401/403:** any `apiFetch` response with these statuses (or any React Query mutation/query that fails with one) triggers `AuthProvider.logout()` via a single registered handler. The user lands on `AuthStack` instantly, with React Query's cache cleared.
++
++## Architecture
++
++```
++┌──────────────────────────────────────────────────────────┐
++│ App.tsx                                                  │
++│  └── QueryClientProvider                                 │
++│       └── AuthProvider                                   │
++│            └── NavigationContainer                       │
++│                 └── RootNavigator (reads useAuth)        │
++│                      ├── AuthStack: Home, Login          │
++│                      └── AppStack:  Profile              │
++└──────────────────────────────────────────────────────────┘
++```
++
++Dependency direction is strictly downward (per `.ai-factory/ARCHITECTURE.md`):
++
++`screens` → `hooks` → `services` → (no React, no hooks)
++
++## Modules
++
++### Types — `src/types/auth.ts`
++
++`LoginPayload`, `AuthToken`, `AuthUser`. All shared types live here per the project rules.
++
++### HTTP client — `src/services/api/client.ts`
++
++A small typed `apiFetch<T>` wrapper around `fetch` with:
++
++- Base URL `https://dummyjson.com`.
++- Automatic `Authorization: Bearer <token>` injection from a module-private variable, controlled via `setAuthToken(token: string | null)`.
++- A single registered unauthorized handler set via `setOnUnauthorized(handler)`. Any 401/403 response calls the handler before throwing.
++- An `ApiError` class extending `Error` with a numeric `status` field for downstream pattern matching.
++
++### Auth service — `src/services/api/auth.ts`
++
++```ts
++login(payload: LoginPayload): Promise<AuthToken>   // POST /auth/login
++getMe(): Promise<AuthUser>                          // GET /auth/me
++```
++
++Plain async functions, no React. Tokens are never passed in explicitly — `apiFetch` reads the token registered via `setAuthToken`.
++
++### Secure token storage — `src/services/storage/secureTokenStore.ts`
++
++Wraps `react-native-keychain` with three async functions:
++
++- `saveToken(token: AuthToken)` — `Keychain.setGenericPassword` under service `loginapp.auth`.
++- `loadToken()` — returns the deserialized `AuthToken` or `null`.
++- `clearToken()` — `Keychain.resetGenericPassword`.
++
++### `AuthProvider` — `src/providers/AuthProvider.tsx`
++
++Owns context value `{ user, token, isHydrating, login, logout }`.
++
++- **Hydration (mount):** loads stored token → calls `setAuthToken` → calls `getMe()`. Failure clears the keychain and resets state. `isHydrating` flips to `false` either way.
++- **`login(payload)`:** `auth.login` → `saveToken` → `setAuthToken` → `getMe` → updates context state. The whole pipeline is one promise so consumers see one success/failure.
++- **`logout()`:** clears React Query cache (`queryClient.clear()`), `setAuthToken(null)`, resets state, then `clearToken()` (errors logged but swallowed so logout always completes).
++- **401 bridge:** registers the same `logout()` handler with both `client.setOnUnauthorized` (direct apiFetch path) and `queryClient.setQueryClientUnauthorizedHandler` (React Query cache path). Logout is idempotent under double-fire.
++
++### `useAuth` — `src/hooks/useAuth.ts`
++
++Throws if used outside `AuthProvider`.
++
++### `RootNavigator` — `src/navigation/RootNavigator.tsx`
++
++```
++if (isHydrating) → ActivityIndicator (full-screen)
++else if (token)  → AppStack (Profile)
++else             → AuthStack (Home, Login)
++```
++
++Each stack has its own param list type (`AuthStackParamList`, `AppStackParamList`); `RootStackParamList` is exported as the union for backward-compatible imports.
++
++### `useLogin` — `src/hooks/useLogin.ts`
++
++`useMutation` thin wrapper around `useAuth().login`. Lets `LoginScreen` consume `mutate`, `isPending`, `error`, and `reset` without owning the persistence pipeline.
++
++### `useProfile` — `src/hooks/useProfile.ts`
++
++`useQuery({ queryKey: ['profile'], queryFn: getMe, enabled: !!token })`. Disabled while logged out so the cache stays empty.
++
++## Login screen behavior
++
++`src/screens/LoginScreen.tsx`:
++
++- Controlled `username`/`password` inputs with `autoCapitalize="none"`, `autoCorrect={false}`.
++- Submit button is disabled until both fields are non-empty and the mutation is idle.
++- On press: `Keyboard.dismiss()` → `mutation.reset()` if a previous error existed → `mutate({ username, password })`.
++- While `isPending`: button shows `<ActivityIndicator />` and is non-pressable (`PrimaryButton.isLoading` prop).
++- On 400/401: a generic message ("Wrong username or password") is shown above the button via the shared `resolveErrorMessage` helper. The screen never displays raw API error text.
++- On success: nothing — `AuthProvider` updates state, `RootNavigator` swaps to `AppStack`.
++
++## Profile screen behavior
++
++`src/screens/ProfileScreen.tsx`:
++
++- Calls `useProfile()`. Shows `<ActivityIndicator />` until data resolves.
++- Renders `firstName lastName`, `username`, `email`, and the avatar (`Image` with a 96px circular frame).
++- Logout button calls `useAuth().logout()` and never navigates manually.
++
++## Session invalidation
++
++| Trigger | Path | Result |
++|---|---|---|
++| `apiFetch` returns 401/403 | `setOnUnauthorized` registry | `AuthProvider.logout()` |
++| React Query mutation/query fails with `ApiError` (401/403) | `QueryCache`/`MutationCache` global `onError` → `setQueryClientUnauthorizedHandler` | `AuthProvider.logout()` |
++
++Both paths route through the same handler. Logout is idempotent — keychain, in-memory state, and `setAuthToken(null)` are all safe to call repeatedly.
++
++## Configuration
++
++- **Environment:** none. Base URL is hard-coded in `src/services/api/client.ts`.
++- **Native:** iOS requires `pod install` after pulling. The keychain entry uses service name `loginapp.auth`.
++
++## Testing
++
++Run with:
++
++```sh
++pnpm test
++```
++
++Coverage:
++
++- `src/providers/__tests__/AuthProvider.test.tsx` — hydration (logged-out, success, failure), login transition, logout, 401 handler registration.
++- `src/hooks/__tests__/useLogin.test.tsx` — pending/success/error states.
++- `src/hooks/__tests__/useProfile.test.tsx` — disabled without token, fetches once token hydrates.
++- `src/screens/__tests__/LoginScreen.test.tsx` — does not submit when fields are empty, shows generic error on 401.
++- `src/screens/__tests__/ProfileScreen.test.tsx` — renders user data, logout invokes keychain reset.
++
++`react-native-keychain` is mocked globally in `jest.setup.ts` (including the `STORAGE_TYPE` enum). `src/test-utils/renderWithAuth.tsx` provides a wrapper that renders inside `QueryClientProvider` + `AuthProvider` with a fresh non-retrying test query client.
++
++## Out of scope
++
++- Token refresh (`refreshToken` flow) — see `.ai-factory/ROADMAP.md` "Out of scope".
++- OAuth, edit profile, push notifications, offline mode.
++
++## See also
++
++- `.ai-factory/ROADMAP.md` — Phase 2 milestone.
++- `.ai-factory/ARCHITECTURE.md` — layered (screen-centric) architecture.
++- `.ai-factory/RULES.md` — coding rules (no `any`, `@/` alias, `StyleSheet.create`, no `AsyncStorage` for tokens).
+
+commit a4849aac10fb709e5e87f03079a401526bd6ded2
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 18:21:42 2026 +0300
+
+    docs(roadmap): mark Phase 2 auth flow complete
+    
+    All Phase 2 sub-items (navigation, auth service, AuthProvider,
+    LoginScreen, protected routing, ProfileScreen, session invalidation)
+    delivered on `feature/auth-flow`. Phase 3 unit-test checkbox is also
+    marked complete because useLogin/useProfile/AuthProvider transition
+    tests landed in this branch.
+---
+ .ai-factory/ROADMAP.md | 51 ++++++++++++++++++++++++++------------------------
+ 1 file changed, 27 insertions(+), 24 deletions(-)
+
+diff --git a/.ai-factory/ROADMAP.md b/.ai-factory/ROADMAP.md
+index 49f3129..770f802 100644
+--- a/.ai-factory/ROADMAP.md
++++ b/.ai-factory/ROADMAP.md
+@@ -22,45 +22,48 @@ Product and engineering milestones for LoginApp.
+ 
+ ---
+ 
+-## Phase 2 — Login Form & Authentication Flow
++## Phase 2 — Login Form & Authentication Flow (complete)
+ 
+ API: `https://dummyjson.com/docs/auth`
+ 
++Completed: 2026-04-25 (`feature/auth-flow`)
++
+ ### Navigation
+-- 🔲 Home screen has a "Sign In" button that navigates to Login
++- ✅ Home screen has a "Sign In" button that navigates to Login
+ 
+ ### Auth service (`src/services/api/auth.ts`)
+-- 🔲 `POST https://dummyjson.com/auth/login` — typed `LoginPayload` (`username`, `password`) → `AuthToken` (`accessToken`, `refreshToken`, `id`, …)
+-- 🔲 `GET https://dummyjson.com/auth/me` — fetch the authenticated user's profile (Bearer token)
++- ✅ `POST https://dummyjson.com/auth/login` — typed `LoginPayload` (`username`, `password`) → `AuthToken` (`accessToken`, `refreshToken`, `id`, …)
++- ✅ `GET https://dummyjson.com/auth/me` — fetch the authenticated user's profile (Bearer token)
++- ✅ Global interceptor (Axios or custom fetch wrapper) configured to catch 401/403 responses globally
+ 
+ ### Auth state (`src/providers/AuthProvider.tsx`)
+-- 🔲 `AuthProvider` wraps the app; exposes `user`, `token`, `login()`, `logout()` via context
+-- 🔲 Token persisted to `@react-native-async-storage/async-storage` on login
+-- 🔲 On app start, read stored token and rehydrate auth state before first render
+-- 🔲 `useAuth()` hook for consuming the context
++- ✅ `AuthProvider` wraps the app; exposes `user`, `token`, `login()`, `logout()` via context
++- ✅ Token securely persisted to `expo-secure-store` or `react-native-keychain` on login (DO NOT use `AsyncStorage` for tokens)
++- ✅ On app start, read stored token and rehydrate auth state before first render
++- ✅ `useAuth()` hook for consuming the context
+ 
+ ### Login screen (`src/screens/LoginScreen.tsx`)
+-- 🔲 Username and password text inputs (controlled, TypeScript-typed)
+-- 🔲 `useLogin` mutation hook (`useMutation` wrapping the login service)
+-- 🔲 Inline error message shown when credentials are rejected by the API (401)
+-- 🔲 On success: store token via `AuthProvider.login()` and navigate to Profile
+-- 🔲 Loading indicator on the submit button while the request is in flight
+-- 🔲 Dismiss keyboard on submit
++- ✅ Username and password text inputs (controlled, TypeScript-typed)
++- ✅ `useLogin` mutation hook (`useMutation` wrapping the login service)
++- ✅ Inline error message shown when credentials are rejected by the API (401)
++- ✅ On success: store token securely via `AuthProvider.login()`
++- ✅ Loading indicator on the submit button; **button is disabled while `isPending`** to prevent double-click submissions
++- ✅ Dismiss keyboard on submit
+ 
+ ### Protected routing (`src/navigation/RootNavigator.tsx`)
+-- 🔲 Split navigator into `AuthStack` (Home, Login) and `AppStack` (Profile)
+-- 🔲 `RootNavigator` reads auth state from `AuthProvider` and renders the correct stack
+-- 🔲 Unauthenticated users cannot reach the Profile screen
++- ✅ Split navigator into `AuthStack` (Home, Login) and `AppStack` (Profile)
++- ✅ `RootNavigator` reads auth state from `AuthProvider` and conditionally renders the correct stack
++- ✅ Unauthenticated users cannot reach the Profile screen (routing is strictly state-driven, no manual redirects inside components)
+ 
+ ### Profile screen (`src/screens/ProfileScreen.tsx`)
+-- 🔲 `useProfile` query hook — `useQuery` wrapping `GET /auth/me` with the stored token
+-- 🔲 Display: name, email, username, avatar (from API response)
+-- 🔲 If the API returns 401/403 (token invalid or expired): clear stored token, reset auth state, and navigate to Home automatically
+-- 🔲 Logout button — calls `AuthProvider.logout()`, clears token, navigates to Home
++- ✅ `useProfile` query hook — `useQuery` wrapping `GET /auth/me` with the stored token
++- ✅ Display: name, email, username, avatar (from API response)
++- ✅ Logout button — calls `AuthProvider.logout()`, clears secure token, triggering automatic stack switch to `AuthStack`
+ 
+ ### Session invalidation
+-- 🔲 React Query `onError` handler on the `useProfile` query detects 401/403 and triggers automatic logout
+-- 🔲 Works at runtime: if the token expires while the user is on the Profile screen, they are redirected to Home without manual action
++- ✅ Global API interceptor or React Query `QueryCache` global callback detects 401/403
++- ✅ Automatically triggers `AuthProvider.logout()` (clears SecureStore and auth state)
++- ✅ Works at runtime: state update instantly drops the user from `AppStack` to `AuthStack` without local `useEffect` or component-level `onError` handling
+ 
+ ---
+ 
+@@ -70,7 +73,7 @@ API: `https://dummyjson.com/docs/auth`
+ - 🔲 Error boundary for unexpected crashes
+ - 🔲 Accessibility labels on all inputs and buttons
+ - 🔲 Dark mode tested on iOS and Android
+-- 🔲 Unit tests: `useLogin` mutation, `useProfile` query, `AuthProvider` state transitions
++- ✅ Unit tests: `useLogin` mutation, `useProfile` query, `AuthProvider` state transitions (delivered in `feature/auth-flow`, 2026-04-25)
+ - 🔲 E2E smoke test: login → profile → logout flow
+ 
+ ---
+
+commit 6431f98a68388fc913c0c9d556f3fc5751c0975b
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 18:20:06 2026 +0300
+
+    test(auth): cover login, profile, provider transitions, and screens
+    
+    - Add useLogin, useProfile, AuthProvider, LoginScreen, ProfileScreen
+      test suites under src/**/__tests__
+    - Add renderWithAuth helper that wraps components in
+      QueryClientProvider + AuthProvider with a fresh test query client
+    - Mock react-native-keychain (including STORAGE_TYPE) globally in
+      jest.setup so tests run without native modules
+    - Apply eslint --fix import/order corrections to the auth-flow source
+      files touched by this plan
+---
+ jest.setup.ts                                 |  12 +++
+ src/hooks/__tests__/useLogin.test.tsx         |  89 +++++++++++++++
+ src/hooks/__tests__/useProfile.test.tsx       |  84 +++++++++++++++
+ src/hooks/useLogin.ts                         |   1 +
+ src/hooks/useProfile.ts                       |   1 +
+ src/providers/AuthProvider.tsx                |   5 +-
+ src/providers/__tests__/AuthProvider.test.tsx | 149 ++++++++++++++++++++++++++
+ src/screens/LoginScreen.tsx                   |   4 +-
+ src/screens/__tests__/LoginScreen.test.tsx    |  63 +++++++++++
+ src/screens/__tests__/ProfileScreen.test.tsx  |  80 ++++++++++++++
+ src/services/api/auth.ts                      |   1 +
+ src/services/storage/secureTokenStore.ts      |   3 +-
+ src/test-utils/renderWithAuth.tsx             |  35 ++++++
+ src/utils/error.ts                            |   2 +-
+ 14 files changed, 523 insertions(+), 6 deletions(-)
+
+diff --git a/jest.setup.ts b/jest.setup.ts
+index 8887cd6..1d3582f 100644
+--- a/jest.setup.ts
++++ b/jest.setup.ts
+@@ -40,3 +40,15 @@ jest.mock('react-native-linear-gradient', () => {
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock: gradient props unavailable without full package types
+   return (props: any) => React.createElement(View, props, props.children);
+ });
++
++jest.mock('react-native-keychain', () => ({
++  setGenericPassword: jest.fn().mockResolvedValue(true),
++  getGenericPassword: jest.fn().mockResolvedValue(false),
++  resetGenericPassword: jest.fn().mockResolvedValue(true),
++  STORAGE_TYPE: {
++    AES_CBC: 'KeystoreAESCBC',
++    AES_GCM_NO_AUTH: 'KeystoreAESGCM_NoAuth',
++    AES_GCM: 'KeystoreAESGCM',
++    RSA: 'KeystoreRSAECB',
++  },
++}));
+diff --git a/src/hooks/__tests__/useLogin.test.tsx b/src/hooks/__tests__/useLogin.test.tsx
+new file mode 100644
+index 0000000..3748fa1
+--- /dev/null
++++ b/src/hooks/__tests__/useLogin.test.tsx
+@@ -0,0 +1,89 @@
++import React from 'react';
++
++import { QueryClientProvider } from '@tanstack/react-query';
++import { act, renderHook, waitFor } from '@testing-library/react-native';
++
++import { useLogin } from '@/hooks/useLogin';
++import { AuthProvider } from '@/providers/AuthProvider';
++import * as authService from '@/services/api/auth';
++import { createTestQueryClient } from '@/test-utils/renderWithAuth';
++
++import type { AuthToken, AuthUser } from '@/types/auth';
++
++jest.mock('@/services/api/auth');
++jest.mock('@/services/api/client', () => {
++  const actual = jest.requireActual<typeof import('@/services/api/client')>(
++    '@/services/api/client',
++  );
++  return {
++    ...actual,
++    setAuthToken: jest.fn(),
++    setOnUnauthorized: jest.fn(),
++  };
++});
++
++const mockedAuth = jest.mocked(authService);
++
++const TOKEN: AuthToken = {
++  accessToken: 'access-1',
++  refreshToken: 'refresh-1',
++  id: 1,
++};
++
++const USER: AuthUser = {
++  id: 1,
++  username: 'emily',
++  email: 'emily@example.com',
++  firstName: 'Emily',
++  lastName: 'Johnson',
++  image: 'https://dummyjson.com/icon/emilyjohnson.png',
++};
++
++function wrapper({ children }: { children: React.ReactNode }) {
++  const queryClient = createTestQueryClient();
++  return (
++    <QueryClientProvider client={queryClient}>
++      <AuthProvider>{children}</AuthProvider>
++    </QueryClientProvider>
++  );
++}
++
++describe('useLogin', () => {
++  beforeEach(() => {
++    jest.clearAllMocks();
++  });
++
++  it('resolves successfully and exposes idle pending state by default', async () => {
++    const { result } = renderHook(() => useLogin(), { wrapper });
++    await waitFor(() => expect(result.current.isPending).toBe(false));
++    expect(result.current.error).toBeNull();
++  });
++
++  it('marks pending while login is in flight and clears it on success', async () => {
++    mockedAuth.login.mockResolvedValue(TOKEN);
++    mockedAuth.getMe.mockResolvedValue(USER);
++
++    const { result } = renderHook(() => useLogin(), { wrapper });
++
++    act(() => {
++      result.current.mutate({ username: 'emily', password: 'secret' });
++    });
++
++    await waitFor(() => expect(result.current.isSuccess).toBe(true));
++    expect(mockedAuth.login).toHaveBeenCalledWith({ username: 'emily', password: 'secret' });
++  });
++
++  it('exposes error when the underlying login fails', async () => {
++    const failure = new Error('Invalid credentials');
++    mockedAuth.login.mockRejectedValue(failure);
++
++    const { result } = renderHook(() => useLogin(), { wrapper });
++
++    act(() => {
++      result.current.mutate({ username: 'emily', password: 'wrong' });
++    });
++
++    await waitFor(() => expect(result.current.isError).toBe(true));
++    expect(result.current.error).toEqual(failure);
++  });
++});
+diff --git a/src/hooks/__tests__/useProfile.test.tsx b/src/hooks/__tests__/useProfile.test.tsx
+new file mode 100644
+index 0000000..3351c66
+--- /dev/null
++++ b/src/hooks/__tests__/useProfile.test.tsx
+@@ -0,0 +1,84 @@
++import React from 'react';
++
++import { QueryClientProvider } from '@tanstack/react-query';
++import { act, renderHook, waitFor } from '@testing-library/react-native';
++import * as Keychain from 'react-native-keychain';
++
++import { useProfile } from '@/hooks/useProfile';
++import { AuthProvider } from '@/providers/AuthProvider';
++import * as authService from '@/services/api/auth';
++import { createTestQueryClient } from '@/test-utils/renderWithAuth';
++
++import type { AuthToken, AuthUser } from '@/types/auth';
++
++jest.mock('@/services/api/auth');
++jest.mock('@/services/api/client', () => {
++  const actual = jest.requireActual<typeof import('@/services/api/client')>(
++    '@/services/api/client',
++  );
++  return {
++    ...actual,
++    setAuthToken: jest.fn(),
++    setOnUnauthorized: jest.fn(),
++  };
++});
++
++const mockedAuth = jest.mocked(authService);
++const mockedKeychain = jest.mocked(Keychain);
++
++const TOKEN: AuthToken = {
++  accessToken: 'access-1',
++  refreshToken: 'refresh-1',
++  id: 1,
++};
++
++const USER: AuthUser = {
++  id: 1,
++  username: 'emily',
++  email: 'emily@example.com',
++  firstName: 'Emily',
++  lastName: 'Johnson',
++  image: 'https://dummyjson.com/icon/emilyjohnson.png',
++};
++
++function wrapper({ children }: { children: React.ReactNode }) {
++  const queryClient = createTestQueryClient();
++  return (
++    <QueryClientProvider client={queryClient}>
++      <AuthProvider>{children}</AuthProvider>
++    </QueryClientProvider>
++  );
++}
++
++describe('useProfile', () => {
++  beforeEach(() => {
++    jest.clearAllMocks();
++    mockedKeychain.getGenericPassword.mockResolvedValue(false);
++  });
++
++  it('is disabled when no token is present', async () => {
++    const { result } = renderHook(() => useProfile(), { wrapper });
++
++    await act(async () => {
++      await Promise.resolve();
++    });
++
++    expect(result.current.fetchStatus).toBe('idle');
++    expect(mockedAuth.getMe).not.toHaveBeenCalled();
++  });
++
++  it('fetches profile when a token becomes available via hydration', async () => {
++    mockedKeychain.getGenericPassword.mockResolvedValue({
++      service: 'loginapp.auth',
++      username: 'auth-token',
++      password: JSON.stringify(TOKEN),
++      storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
++    });
++    mockedAuth.getMe.mockResolvedValue(USER);
++
++    const { result } = renderHook(() => useProfile(), { wrapper });
++
++    await waitFor(() => expect(result.current.isSuccess).toBe(true));
++    expect(result.current.data).toEqual(USER);
++  });
++});
+diff --git a/src/hooks/useLogin.ts b/src/hooks/useLogin.ts
+index 2823190..164af33 100644
+--- a/src/hooks/useLogin.ts
++++ b/src/hooks/useLogin.ts
+@@ -1,6 +1,7 @@
+ import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+ 
+ import { useAuth } from '@/hooks/useAuth';
++
+ import type { LoginPayload } from '@/types/auth';
+ 
+ export function useLogin(): UseMutationResult<void, Error, LoginPayload> {
+diff --git a/src/hooks/useProfile.ts b/src/hooks/useProfile.ts
+index 0279383..162d32c 100644
+--- a/src/hooks/useProfile.ts
++++ b/src/hooks/useProfile.ts
+@@ -2,6 +2,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+ 
+ import { useAuth } from '@/hooks/useAuth';
+ import { getMe } from '@/services/api/auth';
++
+ import type { AuthUser } from '@/types/auth';
+ 
+ export function useProfile(): UseQueryResult<AuthUser, Error> {
+diff --git a/src/providers/AuthProvider.tsx b/src/providers/AuthProvider.tsx
+index 97f8927..e34f63b 100644
+--- a/src/providers/AuthProvider.tsx
++++ b/src/providers/AuthProvider.tsx
+@@ -3,12 +3,13 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from
+ import { useQueryClient } from '@tanstack/react-query';
+ 
+ import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
+-import { setAuthToken, setOnUnauthorized } from '@/services/api/client';
+ import { getMe, login as loginRequest } from '@/services/api/auth';
++import { setAuthToken, setOnUnauthorized } from '@/services/api/client';
+ import { clearToken, loadToken, saveToken } from '@/services/storage/secureTokenStore';
+-import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ import { logger } from '@/utils/logger';
+ 
++import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
++
+ export type AuthContextValue = {
+   user: AuthUser | null;
+   token: AuthToken | null;
+diff --git a/src/providers/__tests__/AuthProvider.test.tsx b/src/providers/__tests__/AuthProvider.test.tsx
+new file mode 100644
+index 0000000..e03143e
+--- /dev/null
++++ b/src/providers/__tests__/AuthProvider.test.tsx
+@@ -0,0 +1,149 @@
++import React from 'react';
++
++import { QueryClientProvider } from '@tanstack/react-query';
++import { act, renderHook, waitFor } from '@testing-library/react-native';
++import * as Keychain from 'react-native-keychain';
++
++import { useAuth } from '@/hooks/useAuth';
++import { AuthProvider } from '@/providers/AuthProvider';
++import * as authService from '@/services/api/auth';
++import * as client from '@/services/api/client';
++import { createTestQueryClient } from '@/test-utils/renderWithAuth';
++
++import type { AuthToken, AuthUser } from '@/types/auth';
++
++jest.mock('@/services/api/auth');
++jest.mock('@/services/api/client', () => {
++  const actual = jest.requireActual<typeof import('@/services/api/client')>(
++    '@/services/api/client',
++  );
++  return {
++    ...actual,
++    setAuthToken: jest.fn(),
++    setOnUnauthorized: jest.fn(),
++  };
++});
++
++const mockedKeychain = jest.mocked(Keychain);
++const mockedAuth = jest.mocked(authService);
++const mockedClient = jest.mocked(client);
++
++const TOKEN: AuthToken = {
++  accessToken: 'access-1',
++  refreshToken: 'refresh-1',
++  id: 1,
++};
++
++const USER: AuthUser = {
++  id: 1,
++  username: 'emily',
++  email: 'emily@example.com',
++  firstName: 'Emily',
++  lastName: 'Johnson',
++  image: 'https://dummyjson.com/icon/emilyjohnson.png',
++};
++
++function wrapper({ children }: { children: React.ReactNode }) {
++  const queryClient = createTestQueryClient();
++  return (
++    <QueryClientProvider client={queryClient}>
++      <AuthProvider>{children}</AuthProvider>
++    </QueryClientProvider>
++  );
++}
++
++describe('AuthProvider', () => {
++  beforeEach(() => {
++    jest.clearAllMocks();
++    mockedKeychain.getGenericPassword.mockResolvedValue(false);
++  });
++
++  it('finishes hydration as logged-out when no stored token exists', async () => {
++    const { result } = renderHook(() => useAuth(), { wrapper });
++
++    await waitFor(() => expect(result.current.isHydrating).toBe(false));
++    expect(result.current.token).toBeNull();
++    expect(result.current.user).toBeNull();
++  });
++
++  it('hydrates user when a stored token resolves successfully', async () => {
++    mockedKeychain.getGenericPassword.mockResolvedValue({
++      service: 'loginapp.auth',
++      username: 'auth-token',
++      password: JSON.stringify(TOKEN),
++      storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
++    });
++    mockedAuth.getMe.mockResolvedValue(USER);
++
++    const { result } = renderHook(() => useAuth(), { wrapper });
++
++    await waitFor(() => expect(result.current.isHydrating).toBe(false));
++    expect(mockedClient.setAuthToken).toHaveBeenCalledWith(TOKEN.accessToken);
++    expect(result.current.token).toEqual(TOKEN);
++    expect(result.current.user).toEqual(USER);
++  });
++
++  it('clears stored token if hydration getMe call fails', async () => {
++    mockedKeychain.getGenericPassword.mockResolvedValue({
++      service: 'loginapp.auth',
++      username: 'auth-token',
++      password: JSON.stringify(TOKEN),
++      storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
++    });
++    mockedAuth.getMe.mockRejectedValueOnce(new Error('expired'));
++
++    const { result } = renderHook(() => useAuth(), { wrapper });
++
++    await waitFor(() => expect(result.current.isHydrating).toBe(false));
++    expect(result.current.token).toBeNull();
++    expect(result.current.user).toBeNull();
++    expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
++  });
++
++  it('login persists token, fetches profile, and updates state', async () => {
++    mockedAuth.login.mockResolvedValue(TOKEN);
++    mockedAuth.getMe.mockResolvedValue(USER);
++
++    const { result } = renderHook(() => useAuth(), { wrapper });
++    await waitFor(() => expect(result.current.isHydrating).toBe(false));
++
++    await act(async () => {
++      await result.current.login({ username: 'emily', password: 'secret' });
++    });
++
++    expect(mockedAuth.login).toHaveBeenCalledWith({ username: 'emily', password: 'secret' });
++    expect(mockedKeychain.setGenericPassword).toHaveBeenCalled();
++    expect(mockedClient.setAuthToken).toHaveBeenCalledWith(TOKEN.accessToken);
++    expect(result.current.token).toEqual(TOKEN);
++    expect(result.current.user).toEqual(USER);
++  });
++
++  it('logout clears state, token storage, and api client token', async () => {
++    mockedAuth.login.mockResolvedValue(TOKEN);
++    mockedAuth.getMe.mockResolvedValue(USER);
++
++    const { result } = renderHook(() => useAuth(), { wrapper });
++    await waitFor(() => expect(result.current.isHydrating).toBe(false));
++
++    await act(async () => {
++      await result.current.login({ username: 'emily', password: 'secret' });
++    });
++
++    await act(async () => {
++      await result.current.logout();
++    });
++
++    expect(mockedClient.setAuthToken).toHaveBeenLastCalledWith(null);
++    expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
++    expect(result.current.token).toBeNull();
++    expect(result.current.user).toBeNull();
++  });
++
++  it('registers an unauthorized handler with the api client', async () => {
++    renderHook(() => useAuth(), { wrapper });
++
++    await waitFor(() => expect(mockedClient.setOnUnauthorized).toHaveBeenCalled());
++    const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
++    expect(typeof handler).toBe('function');
++  });
++});
+diff --git a/src/screens/LoginScreen.tsx b/src/screens/LoginScreen.tsx
+index 4f638c2..82e9218 100644
+--- a/src/screens/LoginScreen.tsx
++++ b/src/screens/LoginScreen.tsx
+@@ -3,15 +3,15 @@ import React, { useState } from 'react';
+ import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { Keyboard, StyleSheet, View } from 'react-native';
+ 
++import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton } from '@/components/common/Button';
+ import { Input } from '@/components/common/Input';
++import { ErrorMessages } from '@/constants/messages';
+ import { Routes } from '@/constants/routes';
+ import { useLogin } from '@/hooks/useLogin';
+ import { AuthStackParamList } from '@/navigation/RootNavigator';
+-import { ErrorMessages } from '@/constants/messages';
+ import { resolveErrorMessage } from '@/utils/error';
+ 
+-import { AppText } from '@/components/common/AppText';
+ import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ 
+diff --git a/src/screens/__tests__/LoginScreen.test.tsx b/src/screens/__tests__/LoginScreen.test.tsx
+new file mode 100644
+index 0000000..4cfd100
+--- /dev/null
++++ b/src/screens/__tests__/LoginScreen.test.tsx
+@@ -0,0 +1,63 @@
++import React from 'react';
++
++import { fireEvent, waitFor } from '@testing-library/react-native';
++
++import LoginScreen from '@/screens/LoginScreen';
++import * as authService from '@/services/api/auth';
++import { ApiError } from '@/services/api/client';
++import { renderWithAuth } from '@/test-utils/renderWithAuth';
++
++jest.mock('@/services/api/auth');
++jest.mock('@/services/api/client', () => {
++  const actual = jest.requireActual<typeof import('@/services/api/client')>(
++    '@/services/api/client',
++  );
++  return {
++    ...actual,
++    setAuthToken: jest.fn(),
++    setOnUnauthorized: jest.fn(),
++  };
++});
++
++const mockedAuth = jest.mocked(authService);
++
++// Minimal navigation prop stub — the screen does not call into it.
++const navigationStub = {} as React.ComponentProps<typeof LoginScreen>['navigation'];
++const routeStub = { key: 'login', name: 'Login' as const, params: undefined } as React.ComponentProps<
++  typeof LoginScreen
++>['route'];
++
++describe('LoginScreen', () => {
++  beforeEach(() => {
++    jest.clearAllMocks();
++  });
++
++  it('renders inputs and does not submit when fields are empty', async () => {
++    const { getByLabelText, getByText } = renderWithAuth(
++      <LoginScreen navigation={navigationStub} route={routeStub} />,
++    );
++
++    expect(getByLabelText('Username')).toBeTruthy();
++    expect(getByLabelText('Password')).toBeTruthy();
++
++    fireEvent.press(getByText('Login'));
++
++    await waitFor(() => expect(mockedAuth.login).not.toHaveBeenCalled());
++  });
++
++  it('shows a generic inline error when the login mutation fails with 401', async () => {
++    mockedAuth.login.mockRejectedValue(new ApiError(401, 'Invalid credentials'));
++
++    const { getByLabelText, getByText, findByTestId } = renderWithAuth(
++      <LoginScreen navigation={navigationStub} route={routeStub} />,
++    );
++
++    fireEvent.changeText(getByLabelText('Username'), 'emily');
++    fireEvent.changeText(getByLabelText('Password'), 'wrong-password');
++    fireEvent.press(getByText('Login'));
++
++    const errorNode = await findByTestId('login-error');
++    expect(errorNode).toBeTruthy();
++    await waitFor(() => expect(mockedAuth.login).toHaveBeenCalled());
++  });
++});
+diff --git a/src/screens/__tests__/ProfileScreen.test.tsx b/src/screens/__tests__/ProfileScreen.test.tsx
+new file mode 100644
+index 0000000..ede4b20
+--- /dev/null
++++ b/src/screens/__tests__/ProfileScreen.test.tsx
+@@ -0,0 +1,80 @@
++import React from 'react';
++
++import { fireEvent, waitFor } from '@testing-library/react-native';
++import * as Keychain from 'react-native-keychain';
++
++import ProfileScreen from '@/screens/ProfileScreen';
++import * as authService from '@/services/api/auth';
++import { renderWithAuth } from '@/test-utils/renderWithAuth';
++
++import type { AuthToken, AuthUser } from '@/types/auth';
++
++jest.mock('@/services/api/auth');
++jest.mock('@/services/api/client', () => {
++  const actual = jest.requireActual<typeof import('@/services/api/client')>(
++    '@/services/api/client',
++  );
++  return {
++    ...actual,
++    setAuthToken: jest.fn(),
++    setOnUnauthorized: jest.fn(),
++  };
++});
++
++const mockedAuth = jest.mocked(authService);
++const mockedKeychain = jest.mocked(Keychain);
++
++const TOKEN: AuthToken = {
++  accessToken: 'access-1',
++  refreshToken: 'refresh-1',
++  id: 1,
++};
++
++const USER: AuthUser = {
++  id: 1,
++  username: 'emily',
++  email: 'emily@example.com',
++  firstName: 'Emily',
++  lastName: 'Johnson',
++  image: 'https://dummyjson.com/icon/emilyjohnson.png',
++};
++
++const navigationStub = {} as React.ComponentProps<typeof ProfileScreen>['navigation'];
++const routeStub = { key: 'profile', name: 'Profile' as const, params: undefined } as React.ComponentProps<
++  typeof ProfileScreen
++>['route'];
++
++describe('ProfileScreen', () => {
++  beforeEach(() => {
++    jest.clearAllMocks();
++    mockedKeychain.getGenericPassword.mockResolvedValue({
++      service: 'loginapp.auth',
++      username: 'auth-token',
++      password: JSON.stringify(TOKEN),
++      storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
++    });
++    mockedAuth.getMe.mockResolvedValue(USER);
++  });
++
++  it('renders the authenticated user and a logout button after data resolves', async () => {
++    const { findByText, getByText } = renderWithAuth(
++      <ProfileScreen navigation={navigationStub} route={routeStub} />,
++    );
++
++    expect(await findByText(`${USER.firstName} ${USER.lastName}`)).toBeTruthy();
++    expect(getByText(USER.username)).toBeTruthy();
++    expect(getByText(USER.email)).toBeTruthy();
++    expect(getByText('Logout')).toBeTruthy();
++  });
++
++  it('clears the secure token when the logout button is pressed', async () => {
++    const { findByText } = renderWithAuth(
++      <ProfileScreen navigation={navigationStub} route={routeStub} />,
++    );
++
++    const logoutButton = await findByText('Logout');
++    fireEvent.press(logoutButton);
++
++    await waitFor(() => expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled());
++  });
++});
+diff --git a/src/services/api/auth.ts b/src/services/api/auth.ts
+index bec391c..efb67c5 100644
+--- a/src/services/api/auth.ts
++++ b/src/services/api/auth.ts
+@@ -1,4 +1,5 @@
+ import { apiFetch } from '@/services/api/client';
++
+ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ 
+ export async function login(payload: LoginPayload): Promise<AuthToken> {
+diff --git a/src/services/storage/secureTokenStore.ts b/src/services/storage/secureTokenStore.ts
+index a547c2b..e35b375 100644
+--- a/src/services/storage/secureTokenStore.ts
++++ b/src/services/storage/secureTokenStore.ts
+@@ -1,8 +1,9 @@
+ import * as Keychain from 'react-native-keychain';
+ 
+-import type { AuthToken } from '@/types/auth';
+ import { logger } from '@/utils/logger';
+ 
++import type { AuthToken } from '@/types/auth';
++
+ const SERVICE = 'loginapp.auth';
+ const ACCOUNT = 'auth-token';
+ 
+diff --git a/src/test-utils/renderWithAuth.tsx b/src/test-utils/renderWithAuth.tsx
+new file mode 100644
+index 0000000..36defe9
+--- /dev/null
++++ b/src/test-utils/renderWithAuth.tsx
+@@ -0,0 +1,35 @@
++import React from 'react';
++
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { render, type RenderOptions, type RenderAPI } from '@testing-library/react-native';
++
++import { AuthProvider } from '@/providers/AuthProvider';
++
++export function createTestQueryClient(): QueryClient {
++  return new QueryClient({
++    defaultOptions: {
++      queries: { retry: false, gcTime: 0, staleTime: 0 },
++      mutations: { retry: false },
++    },
++  });
++}
++
++type WrapperOptions = {
++  queryClient?: QueryClient;
++};
++
++export function renderWithAuth(
++  ui: React.ReactElement,
++  { queryClient, ...renderOptions }: WrapperOptions & Omit<RenderOptions, 'wrapper'> = {},
++): RenderAPI & { queryClient: QueryClient } {
++  const client = queryClient ?? createTestQueryClient();
++
++  const Wrapper = ({ children }: { children: React.ReactNode }) => (
++    <QueryClientProvider client={client}>
++      <AuthProvider>{children}</AuthProvider>
++    </QueryClientProvider>
++  );
++
++  const utils = render(ui, { wrapper: Wrapper, ...renderOptions });
++  return { ...utils, queryClient: client };
++}
+diff --git a/src/utils/error.ts b/src/utils/error.ts
+index 6c2f353..fbfd60e 100644
+--- a/src/utils/error.ts
++++ b/src/utils/error.ts
+@@ -1,5 +1,5 @@
+-import { ApiError } from '@/services/api/client';
+ import { ErrorMessages } from '@/constants/messages';
++import { ApiError } from '@/services/api/client';
+ 
+ export const DEFAULT_ERROR_MESSAGE = ErrorMessages.GENERIC;
+ 
+
+commit a7d6b2d5a29073bd4f7f21c5654fe6589e0dcd9b
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 17:52:43 2026 +0300
+
+    feat(profile): render authenticated user and add logout
+    
+    - Add useProfile query hook gated on the AuthProvider token
+    - ProfileScreen now displays the authenticated user (name, username,
+      email, avatar) and shows ActivityIndicator while loading
+    - Replace navigation back-button with a Logout PrimaryButton that
+      calls AuthProvider.logout(); the auth-state-driven RootNavigator
+      switch from AppStack to AuthStack happens automatically
+---
+ src/hooks/useProfile.ts       | 14 +++++++++++++
+ src/screens/ProfileScreen.tsx | 46 ++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 57 insertions(+), 3 deletions(-)
+
+diff --git a/src/hooks/useProfile.ts b/src/hooks/useProfile.ts
+new file mode 100644
+index 0000000..0279383
+--- /dev/null
++++ b/src/hooks/useProfile.ts
+@@ -0,0 +1,14 @@
++import { useQuery, type UseQueryResult } from '@tanstack/react-query';
++
++import { useAuth } from '@/hooks/useAuth';
++import { getMe } from '@/services/api/auth';
++import type { AuthUser } from '@/types/auth';
++
++export function useProfile(): UseQueryResult<AuthUser, Error> {
++  const { token } = useAuth();
++  return useQuery<AuthUser, Error>({
++    queryKey: ['profile'],
++    queryFn: getMe,
++    enabled: !!token,
++  });
++}
+diff --git a/src/screens/ProfileScreen.tsx b/src/screens/ProfileScreen.tsx
+index 66bff32..23d72d3 100644
+--- a/src/screens/ProfileScreen.tsx
++++ b/src/screens/ProfileScreen.tsx
+@@ -1,21 +1,46 @@
+ import React from 'react';
+ 
+ import { NativeStackScreenProps } from '@react-navigation/native-stack';
+-import { StyleSheet, View } from 'react-native';
++import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
+ 
+ import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton } from '@/components/common/Button';
+ import { Routes } from '@/constants/routes';
++import { useAuth } from '@/hooks/useAuth';
++import { useProfile } from '@/hooks/useProfile';
+ import { AppStackParamList } from '@/navigation/RootNavigator';
+ 
++import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ 
+ type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
+ 
++const AVATAR_SIZE = 96;
++
+ export default function ProfileScreen(_: Props) {
++  const { logout } = useAuth();
++  const { data, isLoading } = useProfile();
++
++  if (isLoading || !data) {
++    return (
++      <View style={styles.container}>
++        <ActivityIndicator color={Colors.primary} />
++      </View>
++    );
++  }
++
+   return (
+     <View style={styles.container}>
+-      <AppText fontWeight="600" style={styles.title}>Profile Screen</AppText>
++      <Image source={{ uri: data.image }} style={styles.avatar} />
++      <AppText fontWeight="600" style={styles.name}>
++        {data.firstName} {data.lastName}
++      </AppText>
++      <AppText style={styles.meta}>{data.username}</AppText>
++      <AppText style={styles.meta}>{data.email}</AppText>
++
++      <View style={styles.actions}>
++        <PrimaryButton title="Logout" onPress={() => void logout()} />
++      </View>
+     </View>
+   );
+ }
+@@ -27,7 +52,22 @@ const styles = StyleSheet.create({
+     justifyContent: 'center',
+     alignItems: 'center',
+   },
+-  title: {
++  avatar: {
++    width: AVATAR_SIZE,
++    height: AVATAR_SIZE,
++    borderRadius: AVATAR_SIZE / 2,
++    backgroundColor: Colors.GRAY_LIGHT,
+     marginBottom: Spacing.lg,
+   },
++  name: {
++    marginBottom: Spacing.sm,
++  },
++  meta: {
++    color: Colors.textSecondary,
++    marginBottom: Spacing.xs,
++  },
++  actions: {
++    width: '100%',
++    marginTop: Spacing.xl,
++  },
+ });
+
+commit 288d722d63ee0ac47a74397c7f22f98ec282a0b8
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 17:49:26 2026 +0300
+
+    feat(login): wire login mutation, inline errors, and pending state
+    
+    - Add useLogin hook delegating to AuthProvider.login via useMutation
+    - Add reusable resolveErrorMessage utility and ErrorMessages constants
+    - Add isLoading prop to PrimaryButton (spinner replaces label, button
+      becomes non-pressable while loading)
+    - LoginScreen now submits via useLogin: dismisses keyboard, disables
+      the button until both fields are filled and not pending, and shows
+      a generic inline error on 401/400 responses
+---
+ .ai-factory/plans/feature-auth-flow.md         |  4 +--
+ src/components/common/Button/PrimaryButton.tsx | 17 ++++++----
+ src/constants/messages.ts                      |  4 +++
+ src/hooks/useLogin.ts                          | 11 ++++++
+ src/screens/LoginScreen.tsx                    | 47 ++++++++++++++++++++++----
+ src/utils/error.ts                             | 19 +++++++++++
+ 6 files changed, 87 insertions(+), 15 deletions(-)
+
+diff --git a/.ai-factory/plans/feature-auth-flow.md b/.ai-factory/plans/feature-auth-flow.md
+index 401e796..158b250 100644
+--- a/.ai-factory/plans/feature-auth-flow.md
++++ b/.ai-factory/plans/feature-auth-flow.md
+@@ -184,8 +184,8 @@ Conventional Commits, scope-prefixed. Each checkpoint groups logically related t
+ - [x] T5 — Create AuthProvider and useAuth
+ - [x] T6 — Wire AuthProvider into App and connect 401 invalidation
+ - [x] T7 — Split RootNavigator into AuthStack and AppStack
+-- [ ] T8 — Create useLogin mutation hook
+-- [ ] T9 — Wire LoginScreen to useLogin
++- [x] T8 — Create useLogin mutation hook
++- [x] T9 — Wire LoginScreen to useLogin
+ - [ ] T10 — Create useProfile query hook
+ - [ ] T11 — Update ProfileScreen with user data and logout
+ - [ ] T12 — Cover hooks, provider, and screens with tests
+diff --git a/src/components/common/Button/PrimaryButton.tsx b/src/components/common/Button/PrimaryButton.tsx
+index 0497620..2c36d2e 100644
+--- a/src/components/common/Button/PrimaryButton.tsx
++++ b/src/components/common/Button/PrimaryButton.tsx
+@@ -1,6 +1,6 @@
+ import React from 'react';
+ 
+-import { StyleSheet } from 'react-native';
++import { ActivityIndicator, StyleSheet } from 'react-native';
+ import LinearGradient from 'react-native-linear-gradient';
+ 
+ import { AppText } from '@/components/common/AppText';
+@@ -13,13 +13,14 @@ import { Typography } from '@/theme/typography';
+ type Props = {
+   title: string;
+   disabled?: boolean;
++  isLoading?: boolean;
+   onPress?: () => void;
+ };
+ 
+-export function PrimaryButton({ title, disabled = false, onPress }: Props) {
++export function PrimaryButton({ title, disabled = false, isLoading = false, onPress }: Props) {
+   return (
+     <ButtonBase
+-      disabled={disabled}
++      disabled={disabled || isLoading}
+       onPress={onPress}
+       style={styles.shadow}
+     >
+@@ -30,9 +31,13 @@ export function PrimaryButton({ title, disabled = false, onPress }: Props) {
+         end={{ x: 0, y: 0.6 }}
+         style={styles.gradient}
+       >
+-        <AppText fontWeight="500" style={styles.label}>
+-          {title}
+-        </AppText>
++        {isLoading ? (
++          <ActivityIndicator color={Colors.WHITE} />
++        ) : (
++          <AppText fontWeight="500" style={styles.label}>
++            {title}
++          </AppText>
++        )}
+       </LinearGradient>
+     </ButtonBase>
+   );
+diff --git a/src/constants/messages.ts b/src/constants/messages.ts
+new file mode 100644
+index 0000000..baa3588
+--- /dev/null
++++ b/src/constants/messages.ts
+@@ -0,0 +1,4 @@
++export const ErrorMessages = {
++  LOGIN_FAILURE: 'User email doesn’t exist',
++  GENERIC: 'Something went wrong. Please try again.',
++} as const;
+diff --git a/src/hooks/useLogin.ts b/src/hooks/useLogin.ts
+new file mode 100644
+index 0000000..2823190
+--- /dev/null
++++ b/src/hooks/useLogin.ts
+@@ -0,0 +1,11 @@
++import { useMutation, type UseMutationResult } from '@tanstack/react-query';
++
++import { useAuth } from '@/hooks/useAuth';
++import type { LoginPayload } from '@/types/auth';
++
++export function useLogin(): UseMutationResult<void, Error, LoginPayload> {
++  const { login } = useAuth();
++  return useMutation<void, Error, LoginPayload>({
++    mutationFn: (payload) => login(payload),
++  });
++}
+diff --git a/src/screens/LoginScreen.tsx b/src/screens/LoginScreen.tsx
+index d6cc35b..4f638c2 100644
+--- a/src/screens/LoginScreen.tsx
++++ b/src/screens/LoginScreen.tsx
+@@ -1,13 +1,18 @@
+ import React, { useState } from 'react';
+ 
+ import { NativeStackScreenProps } from '@react-navigation/native-stack';
+-import { StyleSheet, View } from 'react-native';
++import { Keyboard, StyleSheet, View } from 'react-native';
+ 
+ import { PrimaryButton } from '@/components/common/Button';
+ import { Input } from '@/components/common/Input';
+ import { Routes } from '@/constants/routes';
++import { useLogin } from '@/hooks/useLogin';
+ import { AuthStackParamList } from '@/navigation/RootNavigator';
++import { ErrorMessages } from '@/constants/messages';
++import { resolveErrorMessage } from '@/utils/error';
+ 
++import { AppText } from '@/components/common/AppText';
++import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ 
+ type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;
+@@ -16,6 +21,19 @@ export default function LoginScreen(_: Props) {
+   const [username, setUsername] = useState('');
+   const [password, setPassword] = useState('');
+ 
++  const { mutate, isPending, error, reset } = useLogin();
++
++  const handleSubmit = (): void => {
++    Keyboard.dismiss();
++    if (error) {
++      reset();
++    }
++    mutate({ username, password });
++  };
++
++  const errorMessage = resolveErrorMessage(error, ErrorMessages.LOGIN_FAILURE);
++  const canSubmit = username.length > 0 && password.length > 0 && !isPending;
++
+   return (
+     <View style={styles.container}>
+       <Input
+@@ -23,6 +41,8 @@ export default function LoginScreen(_: Props) {
+         value={username}
+         onChangeText={setUsername}
+         onClear={() => setUsername('')}
++        autoCapitalize="none"
++        autoCorrect={false}
+         style={styles.input}
+         testID="username-input"
+       />
+@@ -33,12 +53,24 @@ export default function LoginScreen(_: Props) {
+         onChangeText={setPassword}
+         onClear={() => setPassword('')}
+         secureTextEntry
+-        errorMessage={password.length > 0 && password.length < 6 ? 'Min 6 characters' : undefined}
++        autoCapitalize="none"
++        autoCorrect={false}
+         style={styles.input}
+         testID="password-input"
+       />
+ 
+-      <PrimaryButton title="Login" onPress={() => { }} />
++      {errorMessage && (
++        <AppText style={styles.errorMessage} testID="login-error">
++          {errorMessage}
++        </AppText>
++      )}
++
++      <PrimaryButton
++        title="Login"
++        onPress={handleSubmit}
++        disabled={!canSubmit}
++        isLoading={isPending}
++      />
+     </View>
+   );
+ }
+@@ -49,11 +81,12 @@ const styles = StyleSheet.create({
+     paddingHorizontal: Spacing.screenPadding,
+     justifyContent: 'center',
+   },
+-  title: {
+-    marginBottom: Spacing.lg,
+-    textAlign: 'center',
+-  },
+   input: {
+     marginBottom: Spacing.md,
+   },
++  errorMessage: {
++    color: Colors.danger,
++    textAlign: 'center',
++    marginBottom: Spacing.md,
++  },
+ });
+diff --git a/src/utils/error.ts b/src/utils/error.ts
+new file mode 100644
+index 0000000..6c2f353
+--- /dev/null
++++ b/src/utils/error.ts
+@@ -0,0 +1,19 @@
++import { ApiError } from '@/services/api/client';
++import { ErrorMessages } from '@/constants/messages';
++
++export const DEFAULT_ERROR_MESSAGE = ErrorMessages.GENERIC;
++
++export function resolveErrorMessage(
++  error: Error | null,
++  message: string = DEFAULT_ERROR_MESSAGE
++): string | null {
++  if (!error) {
++    return null;
++  }
++
++  if (error instanceof ApiError && (error.status === 401 || error.status === 400)) {
++    return message;
++  }
++
++  return error.message || message;
++}
+
+commit 7587781c5fb0aa504658105620493b02b7ffa013
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 17:49:09 2026 +0300
+
+    chore(ios): refresh pod and xcode metadata after keychain install
+    
+    Byproduct of `pod install` triggered by the react-native-keychain
+    addition: regenerated SPEC CHECKSUMS, file-encoding entries, and
+    Info.plist key ordering. No behavioural change.
+---
+ ios/LoginApp.xcodeproj/project.pbxproj |  21 ++++--
+ ios/LoginApp/Info.plist                |  14 ++--
+ ios/Podfile.lock                       | 128 ++++++++++++++++-----------------
+ 3 files changed, 86 insertions(+), 77 deletions(-)
+
+diff --git a/ios/LoginApp.xcodeproj/project.pbxproj b/ios/LoginApp.xcodeproj/project.pbxproj
+index 2aeaafc..6355fe4 100644
+--- a/ios/LoginApp.xcodeproj/project.pbxproj
++++ b/ios/LoginApp.xcodeproj/project.pbxproj
+@@ -25,11 +25,11 @@
+ 		170B2AAF5E58CF6EB8FD9FA4 /* Pods-LoginApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoginApp.debug.xcconfig"; path = "Target Support Files/Pods-LoginApp/Pods-LoginApp.debug.xcconfig"; sourceTree = "<group>"; };
+ 		18A783101147E6695FB707DF /* Pods-LoginApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoginApp.release.xcconfig"; path = "Target Support Files/Pods-LoginApp/Pods-LoginApp.release.xcconfig"; sourceTree = "<group>"; };
+ 		3EFCEF12149C473B371D09EC /* libPods-LoginApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LoginApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+-		469F261785DB454491EE7DD7 /* NotoSans-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSans-Medium.ttf"; path = "../assets/fonts/NotoSans-Medium.ttf"; sourceTree = "<group>"; };
++		469F261785DB454491EE7DD7 /* NotoSans-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSans-Medium.ttf"; path = "../assets/fonts/NotoSans-Medium.ttf"; sourceTree = "<group>"; };
+ 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = LoginApp/AppDelegate.swift; sourceTree = "<group>"; };
+ 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = LoginApp/LaunchScreen.storyboard; sourceTree = "<group>"; };
+-		86EC6EF42B6F4F639A306BDF /* NotoSans-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSans-SemiBold.ttf"; path = "../assets/fonts/NotoSans-SemiBold.ttf"; sourceTree = "<group>"; };
+-		B5B61F7D3FE041FD839408E9 /* NotoSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSans-Regular.ttf"; path = "../assets/fonts/NotoSans-Regular.ttf"; sourceTree = "<group>"; };
++		86EC6EF42B6F4F639A306BDF /* NotoSans-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSans-SemiBold.ttf"; path = "../assets/fonts/NotoSans-SemiBold.ttf"; sourceTree = "<group>"; };
++		B5B61F7D3FE041FD839408E9 /* NotoSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "NotoSans-Regular.ttf"; path = "../assets/fonts/NotoSans-Regular.ttf"; sourceTree = "<group>"; };
+ 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+ /* End PBXFileReference section */
+ 
+@@ -74,7 +74,6 @@
+ 				86EC6EF42B6F4F639A306BDF /* NotoSans-SemiBold.ttf */,
+ 			);
+ 			name = Resources;
+-			path = "";
+ 			sourceTree = "<group>";
+ 		};
+ 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
+@@ -234,10 +233,14 @@
+ 			inputFileListPaths = (
+ 				"${PODS_ROOT}/Target Support Files/Pods-LoginApp/Pods-LoginApp-resources-${CONFIGURATION}-input-files.xcfilelist",
+ 			);
++			inputPaths = (
++			);
+ 			name = "[CP] Copy Pods Resources";
+ 			outputFileListPaths = (
+ 				"${PODS_ROOT}/Target Support Files/Pods-LoginApp/Pods-LoginApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+ 			);
++			outputPaths = (
++			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 			shellPath = /bin/sh;
+ 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LoginApp/Pods-LoginApp-resources.sh\"\n";
+@@ -251,10 +254,14 @@
+ 			inputFileListPaths = (
+ 				"${PODS_ROOT}/Target Support Files/Pods-LoginApp/Pods-LoginApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+ 			);
++			inputPaths = (
++			);
+ 			name = "[CP] Embed Pods Frameworks";
+ 			outputFileListPaths = (
+ 				"${PODS_ROOT}/Target Support Files/Pods-LoginApp/Pods-LoginApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+ 			);
++			outputPaths = (
++			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 			shellPath = /bin/sh;
+ 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LoginApp/Pods-LoginApp-frameworks.sh\"\n";
+@@ -281,6 +288,7 @@
+ 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+ 				CLANG_ENABLE_MODULES = YES;
+ 				CURRENT_PROJECT_VERSION = 1;
++				DEVELOPMENT_TEAM = 9ZJ8PR6ZR5;
+ 				ENABLE_BITCODE = NO;
+ 				INFOPLIST_FILE = LoginApp/Info.plist;
+ 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+@@ -294,7 +302,7 @@
+ 					"-ObjC",
+ 					"-lc++",
+ 				);
+-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
++				PRODUCT_BUNDLE_IDENTIFIER = com.kofil.loginApp;
+ 				PRODUCT_NAME = LoginApp;
+ 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+ 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+@@ -311,6 +319,7 @@
+ 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+ 				CLANG_ENABLE_MODULES = YES;
+ 				CURRENT_PROJECT_VERSION = 1;
++				DEVELOPMENT_TEAM = 9ZJ8PR6ZR5;
+ 				INFOPLIST_FILE = LoginApp/Info.plist;
+ 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+ 				LD_RUNPATH_SEARCH_PATHS = (
+@@ -323,7 +332,7 @@
+ 					"-ObjC",
+ 					"-lc++",
+ 				);
+-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
++				PRODUCT_BUNDLE_IDENTIFIER = com.kofil.loginApp;
+ 				PRODUCT_NAME = LoginApp;
+ 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+ 				SWIFT_VERSION = 5.0;
+diff --git a/ios/LoginApp/Info.plist b/ios/LoginApp/Info.plist
+index 55ae0da..8a1e15b 100644
+--- a/ios/LoginApp/Info.plist
++++ b/ios/LoginApp/Info.plist
+@@ -34,9 +34,15 @@
+ 		<true/>
+ 	</dict>
+ 	<key>NSLocationWhenInUseUsageDescription</key>
+-	<string/>
++	<string></string>
+ 	<key>RCTNewArchEnabled</key>
+ 	<true/>
++	<key>UIAppFonts</key>
++	<array>
++		<string>NotoSans-Regular.ttf</string>
++		<string>NotoSans-Medium.ttf</string>
++		<string>NotoSans-SemiBold.ttf</string>
++	</array>
+ 	<key>UILaunchStoryboardName</key>
+ 	<string>LaunchScreen</string>
+ 	<key>UIRequiredDeviceCapabilities</key>
+@@ -56,11 +62,5 @@
+ 	</array>
+ 	<key>UIViewControllerBasedStatusBarAppearance</key>
+ 	<false/>
+-	<key>UIAppFonts</key>
+-	<array>
+-		<string>NotoSans-Regular.ttf</string>
+-		<string>NotoSans-Medium.ttf</string>
+-		<string>NotoSans-SemiBold.ttf</string>
+-	</array>
+ </dict>
+ </plist>
+diff --git a/ios/Podfile.lock b/ios/Podfile.lock
+index e9297eb..8814315 100644
+--- a/ios/Podfile.lock
++++ b/ios/Podfile.lock
+@@ -2175,85 +2175,85 @@ EXTERNAL SOURCES:
+     :path: "../node_modules/react-native/ReactCommon/yoga"
+ 
+ SPEC CHECKSUMS:
+-  BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
++  BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
+   FBLazyVector: 26fd21c75314e101f280d401e97f27d54f3f7064
+   hermes-engine: 71bbd580d73807ce1abbcd0ec68def4c3edfe398
+   RCTDeprecation: c7a2768f905d76ca6d2cfefb26e4349eacbdfca3
+   RCTRequired: 5e502c3553cfbed090a991c444448da452fb752e
+   RCTSwiftUI: 5ce3ccbdc58b78cc4ebbaace01709ec22d58e131
+-  RCTSwiftUIWrapper: 92ca542811553d4f27c1972c7d2d6679b346f7b7
++  RCTSwiftUIWrapper: a8317a87bb70ef8a07dcecaf4977db7f60cf04c1
+   RCTTypeSafety: 5826cf1f2269e44caee5e7c8d64e2a43af8cf0ef
+   React: 13cf8451582adb1bb324306e1893b91d1cba28c6
+   React-callinvoker: 91e6a605826b684ad2e623811253b4d0c4196bef
+-  React-Core: ac262b0679a1abe5f83afe52e921d4f5c063a48e
++  React-Core: 46818de5f211b2a2759ac823b591af8a0a95c2c1
+   React-Core-prebuilt: 5074c612db39715d53b070bcd4030f28c7d3fb08
+-  React-CoreModules: 29a50b5a2d5e2f6ad9b62bbf588072cc59d66dd6
+-  React-cxxreact: fec59c31cd8c9fa65d7abeb306ed36c75e8ea7c0
++  React-CoreModules: a6a37afee48d4a31ab398640b0795462647d5c67
++  React-cxxreact: 2ec3e2f7a8ae9303460d4ba94cde183ea90d64cd
+   React-debug: 0d21117b897ce0359c9d2c9dfe952f237476a14a
+-  React-defaultsnativemodule: 5324ae6e80b6b74abff7fd281a9c6642f0ec6d29
+-  React-domnativemodule: fe57f4b29def9d482f5d79812b886513734dc872
+-  React-Fabric: 31462b9c207206a776dd3ab27b3e0100e2827cd7
+-  React-FabricComponents: 15384a2edac9db23fee93c664cac53fde4ed6862
+-  React-FabricImage: 5bcdb77bff74addb8ba40790413e049723d8f2ea
+-  React-featureflags: 8f94bda290cdf9d00bab058bc7394c143629922b
+-  React-featureflagsnativemodule: 52e0e2a76a8b7afe1c2d6714dc08a68afff1d8af
+-  React-graphics: 58c6fc2ae980ea5cb30c40f0d707eea9bf6e82a8
+-  React-hermes: 7e1fd2b625f97034f2cc6c349e60cf6f88090c52
+-  React-idlecallbacksnativemodule: b9c7dcabf0ededb362c1e3c3bf3c60deda237670
+-  React-ImageManager: 9c4e66ddd934e32dcbaa3013eb243801cddc6092
+-  React-intersectionobservernativemodule: 85837e749bf236828e24b451545261aebdbc0da1
+-  React-jserrorhandler: 90e1d565ffff74f08e15b2761f707ae998324476
+-  React-jsi: 2ecc05bebdef18f889ec1b3baaef79e145c05e0c
+-  React-jsiexecutor: 4f5c7bcd144b79057e89e3930e5cc63fd422b6e2
+-  React-jsinspector: a4eaa9f8332746ea1a5cbc35a3bd4397cda44008
+-  React-jsinspectorcdp: 299b00723a1c6b741b279309cc5a51176088a406
+-  React-jsinspectornetwork: c627b5e3bbd335f2922dbeae4a82f4bfef998bec
+-  React-jsinspectortracing: cdb66beec2add56f5f365d96bc59caecb567c2c8
+-  React-jsitooling: 8f34b1e5e4125bd40d332f5eea62702cf74a5940
+-  React-jsitracing: 2010b90c31c8ea0d75c3b2b6f1bf883e2ce1aedb
+-  React-logger: ae9cf96fd8f8035f5dbd632f781ef741596a2993
+-  React-Mapbuffer: 95a7bb22f13705cabb2862a6b187a30bde4cf6e0
+-  React-microtasksnativemodule: 5fe728295b1a5ef95632dd97fb5a8a2b148c4c05
+-  react-native-safe-area-context: a2325922b8594ddd27f98fb13437aec126be2502
+-  React-NativeModulesApple: 902ad35a8aa6c13085cad3a19f87c5c752aa0115
+-  React-networking: c5ab123819ccb65b2e9ca5c0e63a9afcfeb8baef
++  React-defaultsnativemodule: d39e708d4da6badf4ecca767da448da50b67c7c9
++  React-domnativemodule: 100e502f718502d0f9c22071339e690f911aabc6
++  React-Fabric: 8595b459278e6c6bf9757f3df9c6d1bfbbf00e9f
++  React-FabricComponents: 7da0ce24bcf163d2e447876b249aa2bd81689165
++  React-FabricImage: 87d397fe918e2725633211c121457b5aa3ddc437
++  React-featureflags: 2302476d727ad40a684724e3e137ebfa21640386
++  React-featureflagsnativemodule: dbb8429313c66b48d9bcdf0f446ee095ef28f16a
++  React-graphics: 086f042572c2b957c505bc3e3138ee8e1c6415c1
++  React-hermes: 540a5f1f008eb04fe59b931112b10854ee6c7061
++  React-idlecallbacksnativemodule: 0dcf39e4842a8255ce48f834e82524b394c016d2
++  React-ImageManager: 367a9979094651c157a35f7cb0e0f7b072451035
++  React-intersectionobservernativemodule: 6b695a44eec274569a438d690e468a9e4a74a3dd
++  React-jserrorhandler: b23306d6d8309693189a89efdd0cf25a5c35b17d
++  React-jsi: 533b0f879f5e60d6c4047d429d9ba1b6c2a7e113
++  React-jsiexecutor: e4380339286988d17dd1bf1b0f31e4e6ac5ef1a0
++  React-jsinspector: 6360a071b0c8bd3c77f519e8836ea57bab2456d4
++  React-jsinspectorcdp: 7a33cd5cfd16ca10a9b7eff7462456b18daf5d14
++  React-jsinspectornetwork: dd8dbb9f54308408e4483c3160aebccb6f03780d
++  React-jsinspectortracing: 90f7ad9acafd2de4bc56ed5f0b13aca5d221ce4b
++  React-jsitooling: 713feac6b772e11c9bf2a5d75570bb74d9bfe15f
++  React-jsitracing: cacd0f0ef50ea61e7035c8ba3a4dc5b38c4da834
++  React-logger: 2c87840a9f6322a1226d0df337d9662f44ea6094
++  React-Mapbuffer: 1fc10d873f00aa895836c316a9737ce7d43875ce
++  React-microtasksnativemodule: 85ac7286ff84e8fc8e1956233748b8d4b2a6dcea
++  react-native-safe-area-context: 6b4966397ada0f7dd481e4486a2ef936834861a1
++  React-NativeModulesApple: 993744f42aab769eb02bf5d256b6767c546d0bb5
++  React-networking: 251bfddc651caca5e3039d1afa1d2eca890d0c56
+   React-oscompat: ed8fa636665935e962d4091180ba6f07dcad7ea9
+-  React-perflogger: 0697ffd8d59f9258ae3676c1d7842640e0323a0a
+-  React-performancecdpmetrics: a3062bce49dded0afd8b6b8535f76dd4c02f7103
+-  React-performancetimeline: 7ab18bb8503943b1ef8b3c509c397ca2e25bc831
++  React-perflogger: 2c9c7a2cb14c78d12803609d289a1bb8761d4ac3
++  React-performancecdpmetrics: 613cb5ee8ac9ef50e9511e7b82aeed4d81b57b81
++  React-performancetimeline: 1dde052682d06f61b1472ab79d26598ba0c883f1
+   React-RCTActionSheet: f498102098d724dcf921224e213f946368cd482b
+-  React-RCTAnimation: 524ff900df5699f9ab15300285c55b7c5787be6b
+-  React-RCTAppDelegate: e6e328615cce469f86694bbcbab1df6e8b225716
+-  React-RCTBlob: 1daa84971d2e3896cc8c30c5d77dc6bf5fb5f6da
+-  React-RCTFabric: a40b3e733fa25cb9a82e05e4e10a133450709257
+-  React-RCTFBReactNativeSpec: d2ce47ee5b09927dbc412fcff6ac696a3bfb862e
+-  React-RCTImage: f82b256f6d07ad5f30cfc97013131326b72535d4
+-  React-RCTLinking: 01220e6d8274dcee9c83f56de32c4e44022cf1ae
+-  React-RCTNetwork: 9adc7ec4e849c1c308c274094c0244e4227fb1bb
+-  React-RCTRuntime: d45d5ccd8f060c11275f15c4dbd9847d851f2d8a
+-  React-RCTSettings: b947cdec353f1c841b436275c7fb8323a090821c
+-  React-RCTText: b7c2da3080e244c4c9f7446b1b378d85df9aadee
+-  React-RCTVibration: 0d541ae3d0b8c0ad2e90982e41780b5fc9645833
++  React-RCTAnimation: 9b42153018cc5f998ec911736a586cb885e33ccf
++  React-RCTAppDelegate: daf9f6f1fb452fbe13c81df1a8175378de7ac203
++  React-RCTBlob: 8d165c9942d1a591cacadb1f073e3d9f5234d1ea
++  React-RCTFabric: 8071a9ca7628518420a6634c6457ecde8460e6a3
++  React-RCTFBReactNativeSpec: e8eb38cca9abecf12d10a0787e413c84dc2a630f
++  React-RCTImage: f36bd87ac6e4aa27860518d221fd3860569a57fc
++  React-RCTLinking: af169ba3619e9fd02e4a0666ac01349ee642a446
++  React-RCTNetwork: e31b7555e1c2c4dff1e1c594d8dac0f1a9b22fe5
++  React-RCTRuntime: 397c81200ce8c2bf0d2b52b689241ed6463087a3
++  React-RCTSettings: f71c195191839901491b5b2e9301514b014fbe8b
++  React-RCTText: 6b0cac11ad4ea9153f526a80aeecdcb0315a2039
++  React-RCTVibration: 46b9020e5aab8c0c986bc4005bc2b05e1698c77d
+   React-rendererconsistency: fba5adaef458215b81f62459f3b1cdcc629348b8
+-  React-renderercss: 5b1ef97da0728a80d2767d624c0cf9788a8631d4
+-  React-rendererdebug: 2bd863da1edf1e29802bd7846f6053f3b8ae01e4
+-  React-RuntimeApple: 94c7a281354a8da41f479eecfecedc15537b75c5
+-  React-RuntimeCore: e0c1ba01b7a34d3f24e29cb95db8537a1878caf1
+-  React-runtimeexecutor: 50716e5d4de74ce736b32b2dc989835198f97969
+-  React-RuntimeHermes: 6c40fca2c6db76d015e42763edc1343c143749ba
+-  React-runtimescheduler: 832d3fa2d6b6558989f48a5a8bd9d66e1a521364
+-  React-timing: c307da445abf09b4597796951f15118707dd99b5
+-  React-utils: 76e964b4a6b480ea47cc22392595028a2a4c879b
+-  React-webperformancenativemodule: f7cdde6e05a1f94e7dec4ff4956bdabfd544f2a5
+-  ReactAppDependencyProvider: 2201c845e5f506d5957669e66abb8de5ce20ad1f
+-  ReactCodegen: 328afc8665acfd2efaea72a9169c991c79a12bdd
+-  ReactCommon: 376f3a275bcf5e59a360e0b1762beb3bd41495ce
++  React-renderercss: d3bb39665d1c2f59e96fb8a04ae5bfd2baf05ca9
++  React-rendererdebug: 2634d95dd3fc09f2cf2f0d2664c46a560fb57778
++  React-RuntimeApple: 0f8f09f8d8031bb906ab52c683bbd6f18789faf4
++  React-RuntimeCore: d4728c58d2143f503391b1389082e3044e8b0f23
++  React-runtimeexecutor: a21a37ce38ff623c5f51b41d7a0f05de8e1fb01f
++  React-RuntimeHermes: 0e7833979b1b14e64cbda469104f48d1d12a573a
++  React-runtimescheduler: 13582d42d9d9ff6bd2d59c25576b1c13eb62308c
++  React-timing: 9f1af3753eef091257c424d3856cd6cbedcad01e
++  React-utils: 862e61256698fe3841aec1af476abf924a6737c3
++  React-webperformancenativemodule: e745e43264767cb8f4334fc11bf3fbff880050d0
++  ReactAppDependencyProvider: 22e2265d86a4e871e5e858f4e7ef1c8d01103680
++  ReactCodegen: 7f6caa8792e771b0e6e6444551781def70163fc9
++  ReactCommon: a804bb8d1dcf3ecdec3a77eb8bba19b7863bbbdb
+   ReactNativeDependencies: bd79671201587b814403d56399c803d61693e574
+-  RNKeychain: 1b055a0ec36d058cb0a075e965d8c9d335e0c828
+-  RNScreens: 63cc2156368ac1a8239e9131103c2fef901fc381
+-  RNSVG: d49e9b043822ac92430dd37fa1d7031aa80911b9
++  RNKeychain: 6778b35b5bd067c322f8479526ac09b1d61f31d0
++  RNScreens: 01b065ded2dfe7987bcce770ff3a196be417ff41
++  RNSVG: 04044c3abcf177fd674a1a3d13097efa1adebcbe
+   Yoga: df8920a8f8ca99996048f6aea23a529f44992eac
+ 
+ PODFILE CHECKSUM: 0581b10cd71cc829a9b3725e925b22f1bd37713d
+ 
+-COCOAPODS: 1.16.2
++COCOAPODS: 1.15.2
+
+commit 0eafb0d446e3063b173f97188bf2c92ff07f3a27
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 17:08:24 2026 +0300
+
+    refactor(nav): split root navigator into auth and app stacks
+    
+    - Introduce AuthStackParamList (Home, Login) and AppStackParamList (Profile)
+    - RootNavigator reads useAuth() and conditionally renders the matching
+      stack; renders ActivityIndicator while AuthProvider hydrates
+    - Update screens to type against their specific stack param list
+    - Remove ProfileScreen "Back to Home" button — stack switching is now
+      strictly state-driven and handled by AuthProvider
+---
+ .ai-factory/plans/feature-auth-flow.md |  2 +-
+ src/navigation/RootNavigator.tsx       | 56 +++++++++++++++++++++++++++++-----
+ src/screens/HomeScreen.tsx             |  4 +--
+ src/screens/LoginScreen.tsx            | 41 ++++++++++++++++++++-----
+ src/screens/ProfileScreen.tsx          |  7 ++---
+ 5 files changed, 87 insertions(+), 23 deletions(-)
+
+diff --git a/.ai-factory/plans/feature-auth-flow.md b/.ai-factory/plans/feature-auth-flow.md
+index 4b144b2..401e796 100644
+--- a/.ai-factory/plans/feature-auth-flow.md
++++ b/.ai-factory/plans/feature-auth-flow.md
+@@ -183,7 +183,7 @@ Conventional Commits, scope-prefixed. Each checkpoint groups logically related t
+ - [x] T4 — Implement auth service
+ - [x] T5 — Create AuthProvider and useAuth
+ - [x] T6 — Wire AuthProvider into App and connect 401 invalidation
+-- [ ] T7 — Split RootNavigator into AuthStack and AppStack
++- [x] T7 — Split RootNavigator into AuthStack and AppStack
+ - [ ] T8 — Create useLogin mutation hook
+ - [ ] T9 — Wire LoginScreen to useLogin
+ - [ ] T10 — Create useProfile query hook
+diff --git a/src/navigation/RootNavigator.tsx b/src/navigation/RootNavigator.tsx
+index 404df88..df95a3e 100644
+--- a/src/navigation/RootNavigator.tsx
++++ b/src/navigation/RootNavigator.tsx
+@@ -1,26 +1,66 @@
+ import React from 'react';
+ 
+ import { createNativeStackNavigator } from '@react-navigation/native-stack';
++import { ActivityIndicator, StyleSheet, View } from 'react-native';
+ 
+ import { Routes } from '@/constants/routes';
++import { useAuth } from '@/hooks/useAuth';
+ import HomeScreen from '@/screens/HomeScreen';
+ import LoginScreen from '@/screens/LoginScreen';
+ import ProfileScreen from '@/screens/ProfileScreen';
+ 
+-export type RootStackParamList = {
++import { Colors } from '@/theme/colors';
++
++export type AuthStackParamList = {
+   [Routes.HOME]: undefined;
+   [Routes.LOGIN]: undefined;
++};
++
++export type AppStackParamList = {
+   [Routes.PROFILE]: undefined;
+ };
+ 
+-const Stack = createNativeStackNavigator<RootStackParamList>();
++export type RootStackParamList = AuthStackParamList & AppStackParamList;
+ 
+-export default function RootNavigator() {
++const AuthStack = createNativeStackNavigator<AuthStackParamList>();
++const AppStack = createNativeStackNavigator<AppStackParamList>();
++
++function AuthNavigator() {
+   return (
+-    <Stack.Navigator initialRouteName={Routes.HOME}>
+-      <Stack.Screen name={Routes.HOME} component={HomeScreen} />
+-      <Stack.Screen name={Routes.LOGIN} component={LoginScreen} />
+-      <Stack.Screen name={Routes.PROFILE} component={ProfileScreen} />
+-    </Stack.Navigator>
++    <AuthStack.Navigator initialRouteName={Routes.HOME}>
++      <AuthStack.Screen name={Routes.HOME} component={HomeScreen} />
++      <AuthStack.Screen name={Routes.LOGIN} component={LoginScreen} />
++    </AuthStack.Navigator>
+   );
+ }
++
++function AppNavigator() {
++  return (
++    <AppStack.Navigator initialRouteName={Routes.PROFILE}>
++      <AppStack.Screen name={Routes.PROFILE} component={ProfileScreen} />
++    </AppStack.Navigator>
++  );
++}
++
++export default function RootNavigator() {
++  const { token, isHydrating } = useAuth();
++
++  if (isHydrating) {
++    return (
++      <View style={styles.loader}>
++        <ActivityIndicator color={Colors.primary} />
++      </View>
++    );
++  }
++
++  return token ? <AppNavigator /> : <AuthNavigator />;
++}
++
++const styles = StyleSheet.create({
++  loader: {
++    flex: 1,
++    alignItems: 'center',
++    justifyContent: 'center',
++    backgroundColor: Colors.background,
++  },
++});
+diff --git a/src/screens/HomeScreen.tsx b/src/screens/HomeScreen.tsx
+index 8630cd5..d6f020b 100644
+--- a/src/screens/HomeScreen.tsx
++++ b/src/screens/HomeScreen.tsx
+@@ -5,11 +5,11 @@ import { StyleSheet, View } from 'react-native';
+ 
+ import { PrimaryButton } from '@/components/common/Button';
+ import { Routes } from '@/constants/routes';
+-import { RootStackParamList } from '@/navigation/RootNavigator';
++import { AuthStackParamList } from '@/navigation/RootNavigator';
+ 
+ import { Spacing } from '@/theme/spacing';
+ 
+-type Props = NativeStackScreenProps<RootStackParamList, Routes.HOME>;
++type Props = NativeStackScreenProps<AuthStackParamList, Routes.HOME>;
+ 
+ export default function HomeScreen({ navigation }: Props) {
+   return (
+diff --git a/src/screens/LoginScreen.tsx b/src/screens/LoginScreen.tsx
+index c948a32..d6cc35b 100644
+--- a/src/screens/LoginScreen.tsx
++++ b/src/screens/LoginScreen.tsx
+@@ -1,22 +1,44 @@
+-import React from 'react';
++import React, { useState } from 'react';
+ 
+ import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { StyleSheet, View } from 'react-native';
+ 
+-import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton } from '@/components/common/Button';
++import { Input } from '@/components/common/Input';
+ import { Routes } from '@/constants/routes';
+-import { RootStackParamList } from '@/navigation/RootNavigator';
++import { AuthStackParamList } from '@/navigation/RootNavigator';
+ 
+ import { Spacing } from '@/theme/spacing';
+ 
+-type Props = NativeStackScreenProps<RootStackParamList, Routes.LOGIN>;
++type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;
++
++export default function LoginScreen(_: Props) {
++  const [username, setUsername] = useState('');
++  const [password, setPassword] = useState('');
+ 
+-export default function LoginScreen({ navigation }: Props) {
+   return (
+     <View style={styles.container}>
+-      <AppText fontWeight="600" style={styles.title}>Login Screen</AppText>
+-      <PrimaryButton title="Back to Home" onPress={() => navigation.goBack()} />
++      <Input
++        label="Username"
++        value={username}
++        onChangeText={setUsername}
++        onClear={() => setUsername('')}
++        style={styles.input}
++        testID="username-input"
++      />
++
++      <Input
++        label="Password"
++        value={password}
++        onChangeText={setPassword}
++        onClear={() => setPassword('')}
++        secureTextEntry
++        errorMessage={password.length > 0 && password.length < 6 ? 'Min 6 characters' : undefined}
++        style={styles.input}
++        testID="password-input"
++      />
++
++      <PrimaryButton title="Login" onPress={() => { }} />
+     </View>
+   );
+ }
+@@ -26,9 +48,12 @@ const styles = StyleSheet.create({
+     flex: 1,
+     paddingHorizontal: Spacing.screenPadding,
+     justifyContent: 'center',
+-    alignItems: 'center',
+   },
+   title: {
+     marginBottom: Spacing.lg,
++    textAlign: 'center',
++  },
++  input: {
++    marginBottom: Spacing.md,
+   },
+ });
+diff --git a/src/screens/ProfileScreen.tsx b/src/screens/ProfileScreen.tsx
+index ebefab5..66bff32 100644
+--- a/src/screens/ProfileScreen.tsx
++++ b/src/screens/ProfileScreen.tsx
+@@ -6,17 +6,16 @@ import { StyleSheet, View } from 'react-native';
+ import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton } from '@/components/common/Button';
+ import { Routes } from '@/constants/routes';
+-import { RootStackParamList } from '@/navigation/RootNavigator';
++import { AppStackParamList } from '@/navigation/RootNavigator';
+ 
+ import { Spacing } from '@/theme/spacing';
+ 
+-type Props = NativeStackScreenProps<RootStackParamList, Routes.PROFILE>;
++type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
+ 
+-export default function ProfileScreen({ navigation }: Props) {
++export default function ProfileScreen(_: Props) {
+   return (
+     <View style={styles.container}>
+       <AppText fontWeight="600" style={styles.title}>Profile Screen</AppText>
+-      <PrimaryButton title="Back to Home" onPress={() => navigation.goBack()} />
+     </View>
+   );
+ }
+
+commit 5e4cdb5cd514acfc9d085ea0041009a03341b91d
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 17:03:23 2026 +0300
+
+    feat(auth): add provider, service, and 401 invalidation bridge
+    
+    - Add auth service exposing login() and getMe() over apiFetch
+    - Add AuthProvider with hydration, login, logout, and queryClient.clear()
+    - Add useAuth hook for context consumption
+    - Wrap App with AuthProvider inside QueryClientProvider
+    - Bridge React Query QueryCache/MutationCache 401/403 errors and the
+      apiFetch onUnauthorized registry to AuthProvider.logout()
+---
+ .ai-factory/plans/feature-auth-flow.md |   6 +-
+ App.tsx                                |  15 +++--
+ src/hooks/useAuth.ts                   |  11 +++
+ src/providers/AuthProvider.tsx         | 120 +++++++++++++++++++++++++++++++++
+ src/providers/queryClient.ts           |  20 +++++-
+ src/services/api/auth.ts               |  13 ++++
+ 6 files changed, 174 insertions(+), 11 deletions(-)
+
+diff --git a/.ai-factory/plans/feature-auth-flow.md b/.ai-factory/plans/feature-auth-flow.md
+index 811a80a..4b144b2 100644
+--- a/.ai-factory/plans/feature-auth-flow.md
++++ b/.ai-factory/plans/feature-auth-flow.md
+@@ -180,9 +180,9 @@ Conventional Commits, scope-prefixed. Each checkpoint groups logically related t
+ - [x] T1 — Add auth domain types
+ - [x] T2 — Install secure storage and create token store
+ - [x] T3 — Build typed HTTP client with 401/403 hook
+-- [ ] T4 — Implement auth service
+-- [ ] T5 — Create AuthProvider and useAuth
+-- [ ] T6 — Wire AuthProvider into App and connect 401 invalidation
++- [x] T4 — Implement auth service
++- [x] T5 — Create AuthProvider and useAuth
++- [x] T6 — Wire AuthProvider into App and connect 401 invalidation
+ - [ ] T7 — Split RootNavigator into AuthStack and AppStack
+ - [ ] T8 — Create useLogin mutation hook
+ - [ ] T9 — Wire LoginScreen to useLogin
+diff --git a/App.tsx b/App.tsx
+index 04f8571..4a5c94a 100644
+--- a/App.tsx
++++ b/App.tsx
+@@ -10,6 +10,7 @@ import { StatusBar, useColorScheme } from 'react-native';
+ import { SafeAreaProvider } from 'react-native-safe-area-context';
+ 
+ import RootNavigator from '@/navigation/RootNavigator';
++import { AuthProvider } from '@/providers/AuthProvider';
+ import { queryClient } from '@/providers/queryClient';
+ 
+ export default function App() {
+@@ -17,12 +18,14 @@ export default function App() {
+ 
+   return (
+     <QueryClientProvider client={queryClient}>
+-      <SafeAreaProvider>
+-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+-        <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
+-          <RootNavigator />
+-        </NavigationContainer>
+-      </SafeAreaProvider>
++      <AuthProvider>
++        <SafeAreaProvider>
++          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
++          <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
++            <RootNavigator />
++          </NavigationContainer>
++        </SafeAreaProvider>
++      </AuthProvider>
+     </QueryClientProvider>
+   );
+ }
+diff --git a/src/hooks/useAuth.ts b/src/hooks/useAuth.ts
+new file mode 100644
+index 0000000..86ab798
+--- /dev/null
++++ b/src/hooks/useAuth.ts
+@@ -0,0 +1,11 @@
++import { useContext } from 'react';
++
++import { AuthContext, type AuthContextValue } from '@/providers/AuthProvider';
++
++export function useAuth(): AuthContextValue {
++  const context = useContext(AuthContext);
++  if (!context) {
++    throw new Error('useAuth must be used within an AuthProvider');
++  }
++  return context;
++}
+diff --git a/src/providers/AuthProvider.tsx b/src/providers/AuthProvider.tsx
+new file mode 100644
+index 0000000..97f8927
+--- /dev/null
++++ b/src/providers/AuthProvider.tsx
+@@ -0,0 +1,120 @@
++import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
++
++import { useQueryClient } from '@tanstack/react-query';
++
++import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
++import { setAuthToken, setOnUnauthorized } from '@/services/api/client';
++import { getMe, login as loginRequest } from '@/services/api/auth';
++import { clearToken, loadToken, saveToken } from '@/services/storage/secureTokenStore';
++import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
++import { logger } from '@/utils/logger';
++
++export type AuthContextValue = {
++  user: AuthUser | null;
++  token: AuthToken | null;
++  isHydrating: boolean;
++  login: (payload: LoginPayload) => Promise<void>;
++  logout: () => Promise<void>;
++};
++
++export const AuthContext = createContext<AuthContextValue | null>(null);
++
++type Props = {
++  children: React.ReactNode;
++};
++
++export function AuthProvider({ children }: Props) {
++  const queryClient = useQueryClient();
++  const [user, setUser] = useState<AuthUser | null>(null);
++  const [token, setToken] = useState<AuthToken | null>(null);
++  const [isHydrating, setIsHydrating] = useState(true);
++
++  const logout = useCallback(async () => {
++    setAuthToken(null);
++    setUser(null);
++    setToken(null);
++    queryClient.clear();
++    try {
++      await clearToken();
++    } catch (error) {
++      logger.error('[AuthProvider] failed to clear token on logout', error);
++    }
++  }, [queryClient]);
++
++  const login = useCallback(
++    async (payload: LoginPayload) => {
++      const nextToken = await loginRequest(payload);
++      setAuthToken(nextToken.accessToken);
++      try {
++        await saveToken(nextToken);
++      } catch (error) {
++        logger.error('[AuthProvider] failed to persist token after login', error);
++      }
++      const profile = await getMe();
++      setToken(nextToken);
++      setUser(profile);
++    },
++    [],
++  );
++
++  useEffect(() => {
++    let cancelled = false;
++
++    const hydrate = async () => {
++      const stored = await loadToken();
++      if (cancelled) {
++        return;
++      }
++      if (!stored) {
++        setIsHydrating(false);
++        return;
++      }
++      setAuthToken(stored.accessToken);
++      try {
++        const profile = await getMe();
++        if (cancelled) {
++          return;
++        }
++        setToken(stored);
++        setUser(profile);
++      } catch (error) {
++        logger.warn('[AuthProvider] hydration failed; clearing stored token', error);
++        setAuthToken(null);
++        try {
++          await clearToken();
++        } catch (clearError) {
++          logger.error('[AuthProvider] failed to clear token after hydration error', clearError);
++        }
++      } finally {
++        if (!cancelled) {
++          setIsHydrating(false);
++        }
++      }
++    };
++
++    void hydrate();
++
++    return () => {
++      cancelled = true;
++    };
++  }, []);
++
++  useEffect(() => {
++    const handler = (): void => {
++      void logout();
++    };
++    setOnUnauthorized(handler);
++    setQueryClientUnauthorizedHandler(handler);
++    return () => {
++      setOnUnauthorized(null);
++      setQueryClientUnauthorizedHandler(null);
++    };
++  }, [logout]);
++
++  const value = useMemo<AuthContextValue>(
++    () => ({ user, token, isHydrating, login, logout }),
++    [user, token, isHydrating, login, logout],
++  );
++
++  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
++}
+diff --git a/src/providers/queryClient.ts b/src/providers/queryClient.ts
+index be95b28..fdd43da 100644
+--- a/src/providers/queryClient.ts
++++ b/src/providers/queryClient.ts
+@@ -1,13 +1,29 @@
+-import { QueryClient } from '@tanstack/react-query';
++import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
++
++import { ApiError } from '@/services/api/client';
++
++let onUnauthorizedHandler: (() => void) | null = null;
++
++export function setQueryClientUnauthorizedHandler(handler: (() => void) | null): void {
++  onUnauthorizedHandler = handler;
++}
++
++const handleError = (error: unknown): void => {
++  if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
++    onUnauthorizedHandler?.();
++  }
++};
+ 
+ export const queryClient = new QueryClient({
+   defaultOptions: {
+     queries: {
+       retry: 2,
+-      staleTime: 1000 * 60 * 5, // 5 minutes
++      staleTime: 1000 * 60 * 5,
+     },
+     mutations: {
+       retry: 0,
+     },
+   },
++  queryCache: new QueryCache({ onError: handleError }),
++  mutationCache: new MutationCache({ onError: handleError }),
+ });
+diff --git a/src/services/api/auth.ts b/src/services/api/auth.ts
+new file mode 100644
+index 0000000..bec391c
+--- /dev/null
++++ b/src/services/api/auth.ts
+@@ -0,0 +1,13 @@
++import { apiFetch } from '@/services/api/client';
++import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
++
++export async function login(payload: LoginPayload): Promise<AuthToken> {
++  return apiFetch<AuthToken>('/auth/login', {
++    method: 'POST',
++    body: JSON.stringify(payload),
++  });
++}
++
++export async function getMe(): Promise<AuthUser> {
++  return apiFetch<AuthUser>('/auth/me');
++}
+
+commit b0f51f506275b10faea009d43e1b0769d6739f53
+Author: Kostiantyn Filimonov <unrealhero18@gmail.com>
+Date:   Sat Apr 25 16:25:56 2026 +0300
+
+    feat(auth): scaffold types, secure token store, and api client
+    
+    - Add LoginPayload, AuthToken, AuthUser types in src/types/auth.ts
+    - Add react-native-keychain dependency and pod integration
+    - Add secureTokenStore with save/load/clear backed by Keychain
+    - Add typed apiFetch client with ApiError, bearer-token injection,
+      and a registered onUnauthorized handler for 401/403 responses
+    - Save Phase 2 plan under .ai-factory/plans/feature-auth-flow.md
+---
+ .ai-factory/plans/feature-auth-flow.md   | 204 +++++++++++++++++++++++++++++++
+ ios/Podfile.lock                         |  26 ++++
+ package.json                             |   1 +
+ pnpm-lock.yaml                           |   9 ++
+ src/services/api/client.ts               |  66 ++++++++++
+ src/services/storage/secureTokenStore.ts |  40 ++++++
+ src/types/auth.ts                        |  20 +++
+ 7 files changed, 366 insertions(+)
+
+diff --git a/.ai-factory/plans/feature-auth-flow.md b/.ai-factory/plans/feature-auth-flow.md
+new file mode 100644
+index 0000000..811a80a
+--- /dev/null
++++ b/.ai-factory/plans/feature-auth-flow.md
+@@ -0,0 +1,204 @@
++# Plan: Phase 2 — Login Form & Authentication Flow
++
++- **Branch:** `feature/auth-flow`
++- **Created:** 2026-04-25
++- **API:** https://dummyjson.com/docs/auth
++- **Mode:** Full
++
++## Settings
++
++- **Testing:** yes — useLogin mutation, useProfile query, AuthProvider transitions, screen smoke tests
++- **Logging:** minimal — `WARN`/`ERROR` only via `@/utils/logger`; no DEBUG/INFO in success paths
++- **Docs:** yes — mandatory `/aif-docs` checkpoint at completion
++
++## Roadmap Linkage
++
++- **Milestone:** "Phase 2 — Login Form & Authentication Flow"
++- **Rationale:** This plan implements the full Phase 2 milestone end-to-end (auth service, secure-token state, protected navigation, login + profile screens, 401/403 session invalidation). Phase 3 test items for `useLogin`, `useProfile`, and `AuthProvider` transitions are pulled forward into this plan because the user opted in to tests.
++
++## Pre-flight Notes
++
++- The repo is bare React Native (no Expo). **Use `react-native-keychain`**, not `expo-secure-store`. Native pods must be installed for iOS.
++- `src/screens/LoginScreen.tsx` already has uncommitted scaffolding (controlled username/password inputs). Task 9 will replace its `onPress={() => {}}` with a real submit handler — do not start a fresh file, edit the existing one.
++- `src/screens/HomeScreen.tsx` already has a "Go to login" button — the roadmap "Sign In" navigation requirement is satisfied. No new task needed for it.
++- Architecture is layered (screen-centric): screens → hooks → services. Never call services directly from screens. Never use `any` (RULES §Language & Types).
++- Imports must follow the ESLint `import/order` groups: `react` → externals → `@/*` → relative → assets/theme, with blank lines between groups.
++
++## Tasks
++
++### Phase A — Foundations
++
++#### Task 1 — Add auth domain types
++
++- **Deliverable:** `src/types/auth.ts` exporting `LoginPayload`, `AuthToken`, `AuthUser`.
++- **Shapes:**
++  - `LoginPayload = { username: string; password: string }`
++  - `AuthToken = { accessToken: string; refreshToken: string; id: number; expiresInMins?: number }`
++  - `AuthUser = { id: number; username: string; email: string; firstName: string; lastName: string; image: string }` (subset of dummyjson `/auth/me` response — keep minimal, expand only as screens need it).
++- **Logging:** none.
++- **Notes:** Use `type`, not `interface` (RULES). No `any`.
++
++#### Task 2 — Install secure storage and create token store
++
++- **Deliverable:**
++  - Add `react-native-keychain` to `package.json`; run pod install for iOS.
++  - `src/services/storage/secureTokenStore.ts` exporting `saveToken(token: AuthToken)`, `loadToken()`, `clearToken()`.
++- **Behaviour:** wrap `Keychain.setGenericPassword` / `getGenericPassword` / `resetGenericPassword`. Serialise the full `AuthToken` JSON under a single keychain entry (service: `loginapp.auth`).
++- **Logging:** `logger.error` on keychain failures only.
++- **Notes:** AsyncStorage is forbidden for tokens (roadmap rule). All functions return `Promise<T>` with explicit return types.
++- **Blocked by:** Task 1.
++
++#### Task 3 — Build typed HTTP client with 401/403 hook
++
++- **Deliverable:** `src/services/api/client.ts` exporting:
++  - `setAuthToken(accessToken: string | null)` — updates an in-module variable used to set `Authorization: Bearer <token>`.
++  - `setOnUnauthorized(handler: () => void)` — registers a single global handler.
++  - `apiFetch<T>(path: string, init?: RequestInit): Promise<T>` — base URL `https://dummyjson.com`, throws `Error` on non-OK, calls registered handler on `401`/`403` before throwing.
++- **Logging:** `logger.warn` once when the unauthorized handler fires; `logger.error` on network failures. Nothing else.
++- **Notes:** No `any`. Generic over `T`. Service layer only — do not import from `screens`/`hooks`/`components`.
++- **Blocked by:** Task 1.
++
++### Phase B — Auth state and protected routing
++
++#### Task 4 — Implement auth service
++
++- **Deliverable:** `src/services/api/auth.ts`:
++  - `login(payload: LoginPayload): Promise<AuthToken>` → `POST /auth/login`.
++  - `getMe(): Promise<AuthUser>` → `GET /auth/me` (relies on `apiFetch`'s in-module bearer token; do not pass token explicitly).
++- **Logging:** none in success paths; rely on `apiFetch` for error logs.
++- **Notes:** Plain async functions, no React, no hooks. Throw `Error` on non-OK (already handled inside `apiFetch`).
++- **Blocked by:** Task 3.
++
++#### Task 5 — Create `AuthProvider` and `useAuth`
++
++- **Deliverable:**
++  - `src/providers/AuthProvider.tsx` with context value `{ user: AuthUser | null; token: AuthToken | null; isHydrating: boolean; login: (payload: LoginPayload) => Promise<void>; logout: () => Promise<void> }`.
++  - `src/hooks/useAuth.ts` exporting a `useAuth()` hook that reads the context (throw if used outside provider).
++- **Behaviour:**
++  - On mount: `loadToken()` from keychain; if present, call `setAuthToken(token.accessToken)` then `getMe()` to populate `user`. Set `isHydrating = false` when done (success or fail).
++  - On `login`: call `auth.login`, persist via `saveToken`, `setAuthToken`, fetch `getMe`, update state.
++  - On `logout`: clear keychain (`clearToken`), `setAuthToken(null)`, reset state, call `queryClient.clear()` to drop cached server data.
++  - If `getMe()` fails during hydration, treat as logged-out: clear token, reset state.
++- **Logging:** `logger.warn` on hydration failure; `logger.error` on keychain write/clear failures. No success logs.
++- **Notes:** Token is server state but kept in context because it gates routing — do not duplicate `user` into a `useState` that React Query could own; use `useQuery` internally for `me` keyed by token if it simplifies the rehydration flow (optional, judgement call).
++- **Blocked by:** Tasks 2, 4.
++
++#### Task 6 — Wire `AuthProvider` into `App.tsx` and connect 401 invalidation
++
++- **Deliverable:**
++  - `App.tsx`: wrap `<NavigationContainer>` with `<AuthProvider>` (inside `<QueryClientProvider>` so the provider can use the client).
++  - Inside `AuthProvider` (or a sibling effect), call `setOnUnauthorized(() => logout())` on mount.
++  - Add a global `QueryCache`/`MutationCache` `onError` callback in `src/providers/queryClient.ts` (or via `setQueryDefaults`) that detects 401/403 errors thrown by `apiFetch` and triggers logout via the same handler bridge.
++- **Logging:** `logger.warn` once per 401 trigger.
++- **Notes:** Bridge the React Query global error to the auth handler via the `setOnUnauthorized` registry — do not import `AuthProvider` into `queryClient.ts` (that would create a cycle). Throw a typed `ApiError` (extend `Error` with `status: number`) from `apiFetch` so the cache callback can pattern-match.
++- **Blocked by:** Tasks 3, 5.
++
++#### Task 7 — Split `RootNavigator` into `AuthStack` and `AppStack`
++
++- **Deliverable:** Refactor `src/navigation/RootNavigator.tsx`:
++  - Move `Home` and `Login` into `AuthStack`.
++  - Move `Profile` into `AppStack`.
++  - `RootNavigator` reads `useAuth()`; while `isHydrating` render a minimal centered `ActivityIndicator` placeholder; otherwise pick stack by `token` presence.
++  - Keep the single `RootStackParamList` or split into `AuthStackParamList` / `AppStackParamList` — prefer the split, then re-export a union type for consumers that need it.
++- **Logging:** none.
++- **Notes:** Routing must be strictly state-driven — no `navigation.navigate(Login)` after logout from screens (RULES + roadmap). Update `Routes` enum only if you introduce a loading route; otherwise leave it as-is.
++- **Blocked by:** Task 5.
++
++### Phase C — Login screen
++
++#### Task 8 — Create `useLogin` mutation hook
++
++- **Deliverable:** `src/hooks/useLogin.ts` exporting `useLogin()` that returns the result of `useMutation({ mutationFn: ({ username, password }) => auth.login({ username, password }) })`.
++- **Behaviour:** On `onSuccess`, call `useAuth().login` flow — but to avoid duplicating the login pipeline (token persist + getMe), have the hook delegate the **whole** flow to `AuthProvider.login()` and wrap it in `useMutation` so callers still get `isPending`/`error`/`mutate`. The mutationFn becomes `(payload) => authContext.login(payload)`.
++- **Logging:** none — `AuthProvider` already logs failures.
++- **Notes:** Type `error` as `Error`; no `any`. Do not import the service directly here — go through `AuthProvider`.
++- **Blocked by:** Tasks 4, 5.
++
++#### Task 9 — Wire `LoginScreen` to `useLogin`
++
++- **Deliverable:** Update existing `src/screens/LoginScreen.tsx`:
++  - Replace `onPress={() => {}}` with `submit()` that calls `useLogin().mutate({ username, password })`.
++  - Show inline error message above the submit button when `mutation.isError` (text from `mutation.error.message`; map "Invalid credentials" / 401 generically to "Wrong username or password").
++  - Disable the submit button while `mutation.isPending`; show a spinner inside `PrimaryButton` (extend `PrimaryButton` only if needed — otherwise pass an `isLoading` prop you add to it).
++  - Call `Keyboard.dismiss()` at the start of `submit()`.
++  - Remove the placeholder client-side password length validation — server is the source of truth (revert that line; keep field controlled).
++- **Logging:** none.
++- **Notes:** No business logic outside the hook — keep the screen thin. Successful login must NOT call `navigation.navigate` — the navigator switch is automatic via `AuthProvider` state (Task 7).
++- **Blocked by:** Tasks 7, 8.
++
++### Phase D — Profile screen
++
++#### Task 10 — Create `useProfile` query hook
++
++- **Deliverable:** `src/hooks/useProfile.ts` exporting `useProfile()` returning `useQuery({ queryKey: ['profile'], queryFn: getMe, enabled: !!token })`.
++- **Behaviour:** Read `token` from `useAuth()` to drive `enabled`. Stale time: rely on the `queryClient` default (5 min).
++- **Logging:** none.
++- **Notes:** No `any`. Errors here are picked up by the global `QueryCache` 401 handler; do not handle 401 locally.
++- **Blocked by:** Tasks 4, 5.
++
++#### Task 11 — Update `ProfileScreen` to render user and provide logout
++
++- **Deliverable:** `src/screens/ProfileScreen.tsx`:
++  - Use `useProfile()`.
++  - When loading: render `<ActivityIndicator />` (skeleton task is Phase 3 — out of scope).
++  - When data: show `firstName lastName`, `email`, `username`, and avatar (`<Image source={{ uri: image }} />` with a fixed size from theme).
++  - Replace "Back to Home" button with a "Logout" `PrimaryButton` calling `useAuth().logout()`.
++- **Logging:** none.
++- **Notes:** Do not call `navigation.goBack()` or `navigation.navigate(Home)` after logout — stack switch is automatic.
++- **Blocked by:** Tasks 7, 10.
++
++### Phase E — Tests
++
++#### Task 12 — Cover hooks, provider, and screens with tests
++
++- **Deliverable:** Co-located or `__tests__/` files (RULES allows either):
++  - `src/hooks/__tests__/useLogin.test.ts` — successful login resolves, failed login surfaces error.
++  - `src/hooks/__tests__/useProfile.test.ts` — disabled when no token; fetches when token present.
++  - `src/providers/__tests__/AuthProvider.test.tsx` — initial hydration with stored token, login transition, logout transition, 401 bridge calls logout.
++  - `src/screens/__tests__/LoginScreen.test.tsx` — renders smoke; disables button while pending; shows inline error on failure.
++  - `src/screens/__tests__/ProfileScreen.test.tsx` — renders smoke with mocked `useProfile` data; logout button invokes `useAuth().logout`.
++- **Tooling:** `@testing-library/react-native`, mock `react-native-keychain`, `react-native`'s `Keyboard`, and the `apiFetch` client. Wrap renders in `<QueryClientProvider>` + `<AuthProvider>` (or a thin test-utils helper).
++- **Logging:** none (silence `logger.warn`/`error` in test setup).
++- **Notes:** Each screen test must pass the smoke bar (RULES §Testing).
++- **Blocked by:** Tasks 9, 11.
++
++## Commit Plan
++
++Conventional Commits, scope-prefixed. Each checkpoint groups logically related tasks.
++
++| # | Tasks | Suggested message |
++|---|---|---|
++| 1 | T1 → T3 | `feat(auth): scaffold types, secure token store, and api client` |
++| 2 | T4 → T6 | `feat(auth): add provider, service, and 401 invalidation bridge` |
++| 3 | T7 | `refactor(nav): split root navigator into auth and app stacks` |
++| 4 | T8 → T9 | `feat(login): wire login mutation, inline errors, and pending state` |
++| 5 | T10 → T11 | `feat(profile): render authenticated user and add logout` |
++| 6 | T12 | `test(auth): cover login, profile, provider transitions, and screens` |
++
++## Progress Tracker
++
++- [x] T1 — Add auth domain types
++- [x] T2 — Install secure storage and create token store
++- [x] T3 — Build typed HTTP client with 401/403 hook
++- [ ] T4 — Implement auth service
++- [ ] T5 — Create AuthProvider and useAuth
++- [ ] T6 — Wire AuthProvider into App and connect 401 invalidation
++- [ ] T7 — Split RootNavigator into AuthStack and AppStack
++- [ ] T8 — Create useLogin mutation hook
++- [ ] T9 — Wire LoginScreen to useLogin
++- [ ] T10 — Create useProfile query hook
++- [ ] T11 — Update ProfileScreen with user data and logout
++- [ ] T12 — Cover hooks, provider, and screens with tests
++
++## Out of scope (explicit)
++
++- Token refresh flow (`refreshToken`) — roadmap "Out of scope".
++- Edit profile, push notifications, OAuth, offline mode — roadmap "Out of scope".
++- Loading skeleton, error boundary, accessibility audit, dark-mode QA, E2E flow — Phase 3.
++
++## Completion checklist
++
++- [ ] All 12 tasks marked `completed`.
++- [ ] `npm run lint` and `npm test` clean.
++- [ ] iOS app launches, hydrates auth, blocks Profile while logged out, recovers from 401 by dropping to AuthStack.
++- [ ] Mandatory `/aif-docs` checkpoint run before merge.
+diff --git a/ios/Podfile.lock b/ios/Podfile.lock
+index a51722c..e9297eb 100644
+--- a/ios/Podfile.lock
++++ b/ios/Podfile.lock
+@@ -1818,6 +1818,28 @@ PODS:
+     - React-utils (= 0.85.2)
+     - ReactNativeDependencies
+   - ReactNativeDependencies (0.85.2)
++  - RNKeychain (10.0.0):
++    - hermes-engine
++    - RCTRequired
++    - RCTTypeSafety
++    - React-Core
++    - React-Core-prebuilt
++    - React-debug
++    - React-Fabric
++    - React-featureflags
++    - React-graphics
++    - React-ImageManager
++    - React-jsi
++    - React-NativeModulesApple
++    - React-RCTFabric
++    - React-renderercss
++    - React-rendererdebug
++    - React-utils
++    - ReactCodegen
++    - ReactCommon/turbomodule/bridging
++    - ReactCommon/turbomodule/core
++    - ReactNativeDependencies
++    - Yoga
+   - RNScreens (4.24.0):
+     - hermes-engine
+     - RCTRequired
+@@ -1988,6 +2010,7 @@ DEPENDENCIES:
+   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
+   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
++  - RNKeychain (from `../node_modules/react-native-keychain`)
+   - RNScreens (from `../node_modules/react-native-screens`)
+   - RNSVG (from `../node_modules/react-native-svg`)
+   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
+@@ -2142,6 +2165,8 @@ EXTERNAL SOURCES:
+     :path: "../node_modules/react-native/ReactCommon"
+   ReactNativeDependencies:
+     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
++  RNKeychain:
++    :path: "../node_modules/react-native-keychain"
+   RNScreens:
+     :path: "../node_modules/react-native-screens"
+   RNSVG:
+@@ -2224,6 +2249,7 @@ SPEC CHECKSUMS:
+   ReactCodegen: 328afc8665acfd2efaea72a9169c991c79a12bdd
+   ReactCommon: 376f3a275bcf5e59a360e0b1762beb3bd41495ce
+   ReactNativeDependencies: bd79671201587b814403d56399c803d61693e574
++  RNKeychain: 1b055a0ec36d058cb0a075e965d8c9d335e0c828
+   RNScreens: 63cc2156368ac1a8239e9131103c2fef901fc381
+   RNSVG: d49e9b043822ac92430dd37fa1d7031aa80911b9
+   Yoga: df8920a8f8ca99996048f6aea23a529f44992eac
+diff --git a/package.json b/package.json
+index 8c4e03f..cc821a4 100644
+--- a/package.json
++++ b/package.json
+@@ -16,6 +16,7 @@
+     "@tanstack/react-query": "^5.100.1",
+     "react": "19.2.3",
+     "react-native": "0.85.2",
++    "react-native-keychain": "^10.0.0",
+     "react-native-linear-gradient": "^2.8.3",
+     "react-native-safe-area-context": "^5.5.2",
+     "react-native-screens": "^4.24.0",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index a4daa65..29822d6 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -23,6 +23,9 @@ importers:
+       react-native:
+         specifier: 0.85.2
+         version: 0.85.2(@babel/core@7.29.0)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/jest-preset@0.85.2(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.85.2(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3)
++      react-native-keychain:
++        specifier: ^10.0.0
++        version: 10.0.0
+       react-native-linear-gradient:
+         specifier: ^2.8.3
+         version: 2.8.3(react-native@0.85.2(@babel/core@7.29.0)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/jest-preset@0.85.2(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.85.2(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
+@@ -3482,6 +3485,10 @@ packages:
+   react-is@19.2.5:
+     resolution: {integrity: sha512-Dn0t8IQhCmeIT3wu+Apm1/YVsJXsGWi6k4sPdnBIdqMVtHtv0IGi6dcpNpNkNac0zB2uUAqNX3MHzN8c+z2rwQ==}
+ 
++  react-native-keychain@10.0.0:
++    resolution: {integrity: sha512-YzPKSAnSzGEJ12IK6CctNLU79T1W15WDrElRQ+1/FsOazGX9ucFPTQwgYe8Dy8jiSEDJKM4wkVa3g4lD2Z+Pnw==}
++    engines: {node: '>=16'}
++
+   react-native-linear-gradient@2.8.3:
+     resolution: {integrity: sha512-KflAXZcEg54PXkLyflaSZQ3PJp4uC4whM7nT/Uot9m0e/qxFV3p6uor1983D1YOBJbJN7rrWdqIjq0T42jOJyA==}
+     peerDependencies:
+@@ -8485,6 +8492,8 @@ snapshots:
+ 
+   react-is@19.2.5: {}
+ 
++  react-native-keychain@10.0.0: {}
++
+   react-native-linear-gradient@2.8.3(react-native@0.85.2(@babel/core@7.29.0)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/jest-preset@0.85.2(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.85.2(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3):
+     dependencies:
+       react: 19.2.3
+diff --git a/src/services/api/client.ts b/src/services/api/client.ts
+new file mode 100644
+index 0000000..1dc3f4d
+--- /dev/null
++++ b/src/services/api/client.ts
+@@ -0,0 +1,66 @@
++import { logger } from '@/utils/logger';
++
++const BASE_URL = 'https://dummyjson.com';
++
++export class ApiError extends Error {
++  status: number;
++
++  constructor(status: number, message: string) {
++    super(message);
++    this.name = 'ApiError';
++    this.status = status;
++  }
++}
++
++let accessToken: string | null = null;
++let onUnauthorized: (() => void) | null = null;
++
++async function safeReadMessage(response: Response): Promise<string> {
++  try {
++    const data = (await response.json()) as { message?: string };
++    return data.message ?? `Request failed with status ${response.status}`;
++  } catch {
++    return `Request failed with status ${response.status}`;
++  }
++}
++
++export function setAuthToken(token: string | null): void {
++  accessToken = token;
++}
++
++export function setOnUnauthorized(handler: (() => void) | null): void {
++  onUnauthorized = handler;
++}
++
++export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
++  const headers = new Headers(init.headers ?? {});
++  headers.set('Accept', 'application/json');
++  if (init.body && !headers.has('Content-Type')) {
++    headers.set('Content-Type', 'application/json');
++  }
++  if (accessToken) {
++    headers.set('Authorization', `Bearer ${accessToken}`);
++  }
++
++  let response: Response;
++  try {
++    response = await fetch(`${BASE_URL}${path}`, { ...init, headers });
++  } catch (error) {
++    logger.error('[apiFetch] network error', { path, error });
++    throw error;
++  }
++
++  if (response.status === 401 || response.status === 403) {
++    logger.warn('[apiFetch] unauthorized response', { path, status: response.status });
++    onUnauthorized?.();
++    const message = await safeReadMessage(response);
++    throw new ApiError(response.status, message);
++  }
++
++  if (!response.ok) {
++    const message = await safeReadMessage(response);
++    throw new ApiError(response.status, message);
++  }
++
++  return (await response.json()) as T;
++}
+diff --git a/src/services/storage/secureTokenStore.ts b/src/services/storage/secureTokenStore.ts
+new file mode 100644
+index 0000000..a547c2b
+--- /dev/null
++++ b/src/services/storage/secureTokenStore.ts
+@@ -0,0 +1,40 @@
++import * as Keychain from 'react-native-keychain';
++
++import type { AuthToken } from '@/types/auth';
++import { logger } from '@/utils/logger';
++
++const SERVICE = 'loginapp.auth';
++const ACCOUNT = 'auth-token';
++
++export async function saveToken(token: AuthToken): Promise<void> {
++  try {
++    await Keychain.setGenericPassword(ACCOUNT, JSON.stringify(token), {
++      service: SERVICE,
++    });
++  } catch (error) {
++    logger.error('[secureTokenStore] failed to save token', error);
++    throw error;
++  }
++}
++
++export async function loadToken(): Promise<AuthToken | null> {
++  try {
++    const credentials = await Keychain.getGenericPassword({ service: SERVICE });
++    if (!credentials) {
++      return null;
++    }
++    return JSON.parse(credentials.password) as AuthToken;
++  } catch (error) {
++    logger.error('[secureTokenStore] failed to load token', error);
++    return null;
++  }
++}
++
++export async function clearToken(): Promise<void> {
++  try {
++    await Keychain.resetGenericPassword({ service: SERVICE });
++  } catch (error) {
++    logger.error('[secureTokenStore] failed to clear token', error);
++    throw error;
++  }
++}
+diff --git a/src/types/auth.ts b/src/types/auth.ts
+new file mode 100644
+index 0000000..8884ea5
+--- /dev/null
++++ b/src/types/auth.ts
+@@ -0,0 +1,20 @@
++export type LoginPayload = {
++  username: string;
++  password: string;
++};
++
++export type AuthToken = {
++  accessToken: string;
++  refreshToken: string;
++  id: number;
++  expiresInMins?: number;
++};
++
++export type AuthUser = {
++  id: number;
++  username: string;
++  email: string;
++  firstName: string;
++  lastName: string;
++  image: string;
++};
