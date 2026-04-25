@@ -1,15 +1,17 @@
 import React from 'react';
+
 import { View } from 'react-native';
-import InfoIcon from '@/assets/icons/info.svg';
 
 import { AppText } from '@/components/common/AppText';
 
+import InfoIcon from '@/assets/icons/info.svg';
+
 import { styles } from './ErrorMessage.styles';
 
-interface ErrorMessageProps {
+type ErrorMessageProps = {
   message: string | null;
   testID?: string;
-}
+};
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, testID }) => {
   if (!message) return null;

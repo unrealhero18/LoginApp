@@ -1,5 +1,6 @@
 import { focusManager, onlineManager } from '@tanstack/react-query';
 import { act, cleanup } from '@testing-library/react-native';
+
 import { queryClient } from '@/providers/queryClient';
 
 // --- Mocks ---

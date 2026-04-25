@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { act, fireEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, waitFor } from '@testing-library/react-native';
 
 import LoginScreen from '@/screens/LoginScreen';
 import * as authService from '@/services/api/auth';

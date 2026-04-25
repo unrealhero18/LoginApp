@@ -1,4 +1,5 @@
 import { renderHook, act } from '@testing-library/react-native';
+
 import { useForm } from '../useForm';
 
 describe('useForm', () => {
@@ -66,9 +67,9 @@ describe('useForm', () => {
     const validate = (values: typeof initialValues) =>
       values.username.length > 0 && values.password.length > 0;
 
-    interface HookProps {
+    type HookProps = {
       valFunc: (values: typeof initialValues) => boolean;
-    }
+    };
 
     const { result } = renderHook(
       ({ valFunc }: HookProps) => useForm<typeof initialValues>({ initialValues, onSubmit, validate: valFunc }),

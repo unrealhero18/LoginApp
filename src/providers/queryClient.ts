@@ -1,7 +1,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 
-import { ApiError } from '@/services/api/client';
 import { IS_TEST } from '@/constants/env';
+import { ApiError } from '@/services/api/client';
 
 let onUnauthorizedHandler: (() => void) | null = null;
 

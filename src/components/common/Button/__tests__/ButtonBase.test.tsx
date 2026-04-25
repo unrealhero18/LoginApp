@@ -1,4 +1,4 @@
-import { View, Pressable } from 'react-native';
+import { View } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import { ButtonBase } from '../ButtonBase';
