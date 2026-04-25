@@ -13,12 +13,12 @@ import { Spacing } from '@/theme/spacing';
 
 import type { LoginPayload } from '@/types/auth';
 
-interface LoginFormProps {
+type LoginFormProps = {
   onSubmit: (values: LoginPayload) => void;
   isLoading: boolean;
   error: Error | null;
   onResetError: () => void;
-}
+};
 
 export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFormProps) => {
   const { values, handleChange, handleSubmit, isValid } = useForm<LoginPayload>({

@@ -88,11 +88,17 @@ export function AuthProvider({ children }: Props) {
       }
 
       // Fetch user profile using the new token
-      const profile = await getMe();
-
-      // Finalize state update
-      setToken(nextToken);
-      setUser(profile);
+      try {
+        const profile = await getMe();
+        // Finalize state update
+        setToken(nextToken);
+        setUser(profile);
+      } catch (error) {
+        logger.error('[AuthProvider] profile fetch failed after login; clearing token', error);
+        setAuthToken(null);
+        await clearToken();
+        throw error;
+      }
     },
     [],
   );

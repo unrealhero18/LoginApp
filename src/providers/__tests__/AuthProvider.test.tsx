@@ -118,6 +118,27 @@ describe('AuthProvider', () => {
     expect(result.current.user).toEqual(USER);
   });
 
+  it('clears token if getMe fails during login', async () => {
+    mockedAuth.login.mockResolvedValue(TOKEN);
+    mockedAuth.getMe.mockRejectedValueOnce(new Error('profile fetch failed'));
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    await act(async () => {
+      await expect(
+        result.current.login({ username: 'emily', password: 'secret' }),
+      ).rejects.toThrow('profile fetch failed');
+    });
+    (console.error as jest.Mock).mockRestore();
+
+    expect(mockedClient.setAuthToken).toHaveBeenLastCalledWith(null);
+    expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+    expect(result.current.token).toBeNull();
+    expect(result.current.user).toBeNull();
+  });
+
   it('logout clears state, token storage, and api client token', async () => {
     mockedAuth.login.mockResolvedValue(TOKEN);
     mockedAuth.getMe.mockResolvedValue(USER);

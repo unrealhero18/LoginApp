@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-interface UseFormOptions<T> {
+type UseFormOptions<T> = {
   initialValues: T;
   onSubmit: (values: T) => void;
   onValueChange?: () => void;
   validate?: (values: T) => boolean;
-}
+};
 
 /**
  * A reusable hook for managing form state and submission.
