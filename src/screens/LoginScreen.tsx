@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Keyboard, StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
@@ -35,43 +35,48 @@ export default function LoginScreen(_: Props) {
   const canSubmit = username.length > 0 && password.length > 0 && !isPending;
 
   return (
-    <View style={styles.container}>
-      <Input
-        label="Username"
-        value={username}
-        onChangeText={setUsername}
-        onClear={() => setUsername('')}
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={styles.input}
-        testID="username-input"
-      />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <Input
+          label="Username"
+          value={username}
+          onChangeText={setUsername}
+          onClear={() => setUsername('')}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.input}
+          testID="username-input"
+        />
 
-      <Input
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        onClear={() => setPassword('')}
-        secureTextEntry
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={styles.input}
-        testID="password-input"
-      />
+        <Input
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          onClear={() => setPassword('')}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.input}
+          testID="password-input"
+        />
 
-      {errorMessage && (
-        <AppText style={styles.errorMessage} testID="login-error">
-          {errorMessage}
-        </AppText>
-      )}
+        {errorMessage && (
+          <AppText style={styles.errorMessage} testID="login-error">
+            {errorMessage}
+          </AppText>
+        )}
 
-      <PrimaryButton
-        title="Login"
-        onPress={handleSubmit}
-        disabled={!canSubmit}
-        isLoading={isPending}
-      />
-    </View>
+        <PrimaryButton
+          title="Login"
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          isLoading={isPending}
+        />
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
