@@ -183,7 +183,7 @@ Conventional Commits, scope-prefixed. Each checkpoint groups logically related t
 - [x] T4 — Implement auth service
 - [x] T5 — Create AuthProvider and useAuth
 - [x] T6 — Wire AuthProvider into App and connect 401 invalidation
-- [ ] T7 — Split RootNavigator into AuthStack and AppStack
+- [x] T7 — Split RootNavigator into AuthStack and AppStack
 - [ ] T8 — Create useLogin mutation hook
 - [ ] T9 — Wire LoginScreen to useLogin
 - [ ] T10 — Create useProfile query hook

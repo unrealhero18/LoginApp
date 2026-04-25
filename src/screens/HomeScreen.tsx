@@ -5,11 +5,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/common/Button';
 import { Routes } from '@/constants/routes';
-import { RootStackParamList } from '@/navigation/RootNavigator';
+import { AuthStackParamList } from '@/navigation/RootNavigator';
 
 import { Spacing } from '@/theme/spacing';
 
-type Props = NativeStackScreenProps<RootStackParamList, Routes.HOME>;
+type Props = NativeStackScreenProps<AuthStackParamList, Routes.HOME>;
 
 export default function HomeScreen({ navigation }: Props) {
   return (
