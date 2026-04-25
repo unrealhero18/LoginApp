@@ -1,6 +1,8 @@
 import React from 'react';
+
 import { Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
+
 import { AppText } from '@/components/common/AppText';
 
 describe('AppText', () => {

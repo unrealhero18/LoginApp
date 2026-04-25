@@ -1,7 +1,9 @@
 import React from 'react';
+
 import ReactTestRenderer from 'react-test-renderer';
-import { PrimaryButton } from '@/components/common/Button/PrimaryButton';
+
 import { ButtonBase } from '@/components/common/Button/ButtonBase';
+import { PrimaryButton } from '@/components/common/Button/PrimaryButton';
 
 describe('PrimaryButton', () => {
   it('renders correctly', async () => {
