@@ -1,3 +1,8 @@
+import { focusManager, onlineManager } from '@tanstack/react-query';
+import { act, cleanup } from '@testing-library/react-native';
+import { queryClient } from '@/providers/queryClient';
+
+// --- Mocks ---
 jest.mock('react-native-screens', () => ({
   enableScreens: jest.fn(),
   screensEnabled: jest.fn(() => true),
@@ -37,8 +42,8 @@ jest.mock('react-native-safe-area-context', () => {
 jest.mock('react-native-linear-gradient', () => {
   const React = require('react');
   const { View } = require('react-native');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock: gradient props unavailable without full package types
-  return (props: any) => React.createElement(View, props, props.children);
+  return ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) =>
+    React.createElement(View, props, children);
 });
 
 jest.mock('react-native-keychain', () => ({
@@ -53,11 +58,29 @@ jest.mock('react-native-keychain', () => ({
   },
 }));
 
+// --- Global Stubs ---
+globalThis.fetch = jest.fn();
+
+// --- React Query Configuration ---
+// Disable React Query's default behavior of attaching global listeners in tests
+onlineManager.setEventListener(() => () => { });
+focusManager.setEventListener(() => () => { });
+
+// --- Lifecycle Hooks ---
 beforeEach(() => {
-  jest.spyOn(console, 'debug').mockImplementation(() => {});
-  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.useFakeTimers();
+  jest.spyOn(console, 'debug').mockImplementation(() => { });
+  jest.spyOn(console, 'warn').mockImplementation(() => { });
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await queryClient.cancelQueries();
+  queryClient.clear();
+  cleanup(); // Unmount components to stop animations
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  jest.useRealTimers();
+  jest.clearAllMocks();
   jest.restoreAllMocks();
 });

@@ -9,15 +9,7 @@ describe('LoginForm', () => {
   const mockOnResetError = jest.fn();
 
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
   });
 
   it('renders correctly', () => {

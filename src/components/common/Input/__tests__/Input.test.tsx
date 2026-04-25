@@ -2,7 +2,7 @@ import React from 'react';
 
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
-import { Input } from './index';
+import { Input } from '../index';
 
 describe('Input', () => {
   const baseProps = {
@@ -11,15 +11,7 @@ describe('Input', () => {
     onChangeText: jest.fn(),
   };
 
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
   afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
     jest.clearAllMocks();
   });
 

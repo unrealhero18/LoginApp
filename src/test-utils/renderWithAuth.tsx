@@ -4,14 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions, type RenderAPI } from '@testing-library/react-native';
 
 import { AuthProvider } from '@/providers/AuthProvider';
+import { queryClient } from '@/providers/queryClient';
 
 export function createTestQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0, staleTime: 0 },
-      mutations: { retry: false },
-    },
-  });
+  queryClient.clear();
+  return queryClient;
 }
 
 type WrapperOptions = {

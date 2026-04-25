@@ -2,14 +2,14 @@ import React from 'react';
 
 import ReactTestRenderer from 'react-test-renderer';
 
-import { ButtonBase } from '@/components/common/Button/ButtonBase';
-import { PrimaryButton } from '@/components/common/Button/PrimaryButton';
+import { ButtonBase } from '../ButtonBase';
+import { SecondaryButton } from '../SecondaryButton';
 
-describe('PrimaryButton', () => {
+describe('SecondaryButton', () => {
   it('renders correctly', async () => {
     await ReactTestRenderer.act(async () => {
       ReactTestRenderer.create(
-        <PrimaryButton title="Test Button" />
+        <SecondaryButton title="Test Button" />
       );
     });
   });
@@ -18,7 +18,7 @@ describe('PrimaryButton', () => {
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
-        <PrimaryButton title="Test Button" />
+        <SecondaryButton title="Test Button" />
       );
     });
     const root = component!.root;
@@ -31,7 +31,7 @@ describe('PrimaryButton', () => {
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
-        <PrimaryButton title="Test Button" onPress={onPressMock} />
+        <SecondaryButton title="Test Button" onPress={onPressMock} />
       );
     });
     const root = component!.root;
@@ -44,7 +44,7 @@ describe('PrimaryButton', () => {
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
-        <PrimaryButton title="Test Button" disabled={true} />
+        <SecondaryButton title="Test Button" disabled={true} />
       );
     });
     const root = component!.root;

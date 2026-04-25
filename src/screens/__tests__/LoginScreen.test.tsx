@@ -29,15 +29,7 @@ const routeStub = { key: 'login', name: 'Login' as const, params: undefined } as
 
 describe('LoginScreen', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
   });
 
   it('renders inputs and does not submit when fields are empty', async () => {

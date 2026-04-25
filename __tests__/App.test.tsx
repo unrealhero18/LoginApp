@@ -11,7 +11,11 @@ import App from '../App';
 jest.mock('@/navigation/RootNavigator', () => () => null);
 
 test('renders correctly', async () => {
+  let renderer: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(() => {
-    ReactTestRenderer.create(<App />);
+    renderer = ReactTestRenderer.create(<App />);
+  });
+  await ReactTestRenderer.act(() => {
+    renderer.unmount();
   });
 });
