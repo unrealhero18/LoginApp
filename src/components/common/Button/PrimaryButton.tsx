@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import { AppText } from '@/components/common/AppText';
@@ -13,13 +13,14 @@ import { Typography } from '@/theme/typography';
 type Props = {
   title: string;
   disabled?: boolean;
+  isLoading?: boolean;
   onPress?: () => void;
 };
 
-export function PrimaryButton({ title, disabled = false, onPress }: Props) {
+export function PrimaryButton({ title, disabled = false, isLoading = false, onPress }: Props) {
   return (
     <ButtonBase
-      disabled={disabled}
+      disabled={disabled || isLoading}
       onPress={onPress}
       style={styles.shadow}
     >
@@ -30,9 +31,13 @@ export function PrimaryButton({ title, disabled = false, onPress }: Props) {
         end={{ x: 0, y: 0.6 }}
         style={styles.gradient}
       >
-        <AppText fontWeight="500" style={styles.label}>
-          {title}
-        </AppText>
+        {isLoading ? (
+          <ActivityIndicator color={Colors.WHITE} />
+        ) : (
+          <AppText fontWeight="500" style={styles.label}>
+            {title}
+          </AppText>
+        )}
       </LinearGradient>
     </ButtonBase>
   );
