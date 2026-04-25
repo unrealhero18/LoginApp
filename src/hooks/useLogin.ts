@@ -1,6 +1,7 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/useAuth';
+
 import type { LoginPayload } from '@/types/auth';
 
 export function useLogin(): UseMutationResult<void, Error, LoginPayload> {

@@ -3,11 +3,12 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from 
 import { useQueryClient } from '@tanstack/react-query';
 
 import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
-import { setAuthToken, setOnUnauthorized } from '@/services/api/client';
 import { getMe, login as loginRequest } from '@/services/api/auth';
+import { setAuthToken, setOnUnauthorized } from '@/services/api/client';
 import { clearToken, loadToken, saveToken } from '@/services/storage/secureTokenStore';
-import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
 import { logger } from '@/utils/logger';
+
+import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
 
 export type AuthContextValue = {
   user: AuthUser | null;

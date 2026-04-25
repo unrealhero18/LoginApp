@@ -1,4 +1,5 @@
 import { apiFetch } from '@/services/api/client';
+
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
 
 export async function login(payload: LoginPayload): Promise<AuthToken> {

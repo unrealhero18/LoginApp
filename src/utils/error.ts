@@ -1,5 +1,5 @@
-import { ApiError } from '@/services/api/client';
 import { ErrorMessages } from '@/constants/messages';
+import { ApiError } from '@/services/api/client';
 
 export const DEFAULT_ERROR_MESSAGE = ErrorMessages.GENERIC;
 

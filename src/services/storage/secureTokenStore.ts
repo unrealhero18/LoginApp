@@ -1,7 +1,8 @@
 import * as Keychain from 'react-native-keychain';
 
-import type { AuthToken } from '@/types/auth';
 import { logger } from '@/utils/logger';
+
+import type { AuthToken } from '@/types/auth';
 
 const SERVICE = 'loginapp.auth';
 const ACCOUNT = 'auth-token';

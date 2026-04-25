@@ -40,3 +40,15 @@ jest.mock('react-native-linear-gradient', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock: gradient props unavailable without full package types
   return (props: any) => React.createElement(View, props, props.children);
 });
+
+jest.mock('react-native-keychain', () => ({
+  setGenericPassword: jest.fn().mockResolvedValue(true),
+  getGenericPassword: jest.fn().mockResolvedValue(false),
+  resetGenericPassword: jest.fn().mockResolvedValue(true),
+  STORAGE_TYPE: {
+    AES_CBC: 'KeystoreAESCBC',
+    AES_GCM_NO_AUTH: 'KeystoreAESGCM_NoAuth',
+    AES_GCM: 'KeystoreAESGCM',
+    RSA: 'KeystoreRSAECB',
+  },
+}));
