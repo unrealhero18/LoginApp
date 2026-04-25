@@ -11,7 +11,7 @@ export function resolveErrorMessage(
     return null;
   }
 
-  if (error instanceof ApiError && (error.status === 401 || error.status === 400)) {
+  if (error instanceof ApiError) {
     return message;
   }
 

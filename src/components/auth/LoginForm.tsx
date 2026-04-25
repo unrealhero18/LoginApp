@@ -47,6 +47,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
         onClear={() => handleChange('username')('')}
         autoCapitalize="none"
         autoCorrect={false}
+        maxLength={128}
         style={styles.input}
         testID="username-input"
       />
@@ -59,6 +60,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}
+        maxLength={128}
         style={styles.input}
         testID="password-input"
       />

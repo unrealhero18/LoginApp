@@ -157,7 +157,10 @@ export function AuthProvider({ children }: Props) {
    * this will trigger an automatic logout.
    */
   useEffect(() => {
+    let pending = false;
     const handler = (): void => {
+      if (pending) return;
+      pending = true;
       void logout();
     };
 

@@ -5,7 +5,9 @@ export const logger = {
     }
   },
   error: (message: string, ...args: unknown[]) => {
-    console.error(message, ...args);
+    if (__DEV__) {
+      console.error(message, ...args);
+    }
   },
   warn: (message: string, ...args: unknown[]) => {
     if (__DEV__) {
