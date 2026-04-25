@@ -10,6 +10,9 @@ import { logger } from '@/utils/logger';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
 
+/**
+ * Shape of the authentication context provided to the application.
+ */
 export type AuthContextValue = {
   user: AuthUser | null;
   token: AuthToken | null;
@@ -18,23 +21,43 @@ export type AuthContextValue = {
   logout: () => Promise<void>;
 };
 
+/**
+ * Context used to share authentication state across the component tree.
+ * Use the `useAuth` hook to access this context.
+ */
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 type Props = {
   children: React.ReactNode;
 };
 
+/**
+ * AuthProvider component that manages the authentication lifecycle.
+ * It handles:
+ * 1. Session hydration (restoring token from Keychain on startup).
+ * 2. Login/Logout actions.
+ * 3. Syncing the API client and QueryClient with the auth state.
+ * 4. Handling global unauthorized (401/403) events.
+ */
 export function AuthProvider({ children }: Props) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<AuthToken | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
 
+  /**
+   * Logs out the user by clearing state, storage, and the query cache.
+   */
   const logout = useCallback(async () => {
+    // 1. Clear memory state
     setAuthToken(null);
     setUser(null);
     setToken(null);
+
+    // 2. Clear React Query cache to prevent data leakage between users
     queryClient.clear();
+
+    // 3. Clear persistent storage
     try {
       await clearToken();
     } catch (error) {
@@ -42,43 +65,71 @@ export function AuthProvider({ children }: Props) {
     }
   }, [queryClient]);
 
+  /**
+   * Performs the login operation:
+   * 1. Calls the login API.
+   * 2. Saves the token to secure storage.
+   * 3. Fetches the user profile.
+   * 4. Updates the local state.
+   */
   const login = useCallback(
     async (payload: LoginPayload) => {
+      // Fetch new tokens
       const nextToken = await loginRequest(payload);
+
+      // Update API client immediately
       setAuthToken(nextToken.accessToken);
+
+      // Persist tokens for future sessions
       try {
         await saveToken(nextToken);
       } catch (error) {
         logger.error('[AuthProvider] failed to persist token after login', error);
       }
+
+      // Fetch user profile using the new token
       const profile = await getMe();
+
+      // Finalize state update
       setToken(nextToken);
       setUser(profile);
     },
     [],
   );
 
+  /**
+   * Effect to restore the authentication session on app launch.
+   */
   useEffect(() => {
     let cancelled = false;
 
     const hydrate = async () => {
+      // 1. Attempt to load token from Keychain
       const stored = await loadToken();
       if (cancelled) {
         return;
       }
+
       if (!stored) {
         setIsHydrating(false);
         return;
       }
+
+      // 2. Set token in API client for subsequent requests
       setAuthToken(stored.accessToken);
+
       try {
+        // 3. Verify session by fetching user profile
         const profile = await getMe();
         if (cancelled) {
           return;
         }
+
+        // 4. Update state with restored session
         setToken(stored);
         setUser(profile);
       } catch (error) {
+        // If profile fetch fails (e.g. token expired), clear everything
         logger.warn('[AuthProvider] hydration failed; clearing stored token', error);
         setAuthToken(null);
         try {
@@ -100,12 +151,19 @@ export function AuthProvider({ children }: Props) {
     };
   }, []);
 
+  /**
+   * Effect to register global unauthorized handlers.
+   * If any API request (via fetch or React Query) returns 401/403, 
+   * this will trigger an automatic logout.
+   */
   useEffect(() => {
     const handler = (): void => {
       void logout();
     };
+
     setOnUnauthorized(handler);
     setQueryClientUnauthorizedHandler(handler);
+
     return () => {
       setOnUnauthorized(null);
       setQueryClientUnauthorizedHandler(null);
