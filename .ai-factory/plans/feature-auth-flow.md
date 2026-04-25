@@ -180,9 +180,9 @@ Conventional Commits, scope-prefixed. Each checkpoint groups logically related t
 - [x] T1 — Add auth domain types
 - [x] T2 — Install secure storage and create token store
 - [x] T3 — Build typed HTTP client with 401/403 hook
-- [ ] T4 — Implement auth service
-- [ ] T5 — Create AuthProvider and useAuth
-- [ ] T6 — Wire AuthProvider into App and connect 401 invalidation
+- [x] T4 — Implement auth service
+- [x] T5 — Create AuthProvider and useAuth
+- [x] T6 — Wire AuthProvider into App and connect 401 invalidation
 - [ ] T7 — Split RootNavigator into AuthStack and AppStack
 - [ ] T8 — Create useLogin mutation hook
 - [ ] T9 — Wire LoginScreen to useLogin

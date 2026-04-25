@@ -10,6 +10,7 @@ import { StatusBar, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import RootNavigator from '@/navigation/RootNavigator';
+import { AuthProvider } from '@/providers/AuthProvider';
 import { queryClient } from '@/providers/queryClient';
 
 export default function App() {
@@ -17,12 +18,14 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
-          <RootNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+          <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
+            <RootNavigator />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
