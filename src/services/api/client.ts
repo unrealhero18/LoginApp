@@ -1,6 +1,7 @@
+import { API_BASE_URL } from '@/constants/env';
 import { logger } from '@/utils/logger';
 
-const BASE_URL = 'https://dummyjson.com';
+const BASE_URL = API_BASE_URL;
 
 /**
  * Custom error class for API requests.
