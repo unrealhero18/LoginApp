@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { logger } from '@/utils/logger';
+import { cn } from '@/utils/styles';
 
 import { styles } from './Input.styles';
 import { InputClearButton } from './InputClearButton';
@@ -54,15 +55,15 @@ export const Input = forwardRef<TextInput, InputProps>(
       }
     }, [hasError, errorMessage, label]);
 
-    const containerStyle = [
-      styles.container,
-      hasError ? styles.containerError : shouldFloat && styles.containerFocused,
-    ];
+    const containerStyle = cn(styles, 'container', {
+      containerError: hasError,
+      containerFocused: !hasError && shouldFloat,
+    });
 
-    const labelStyle = [
-      styles.label,
-      hasError ? styles.labelError : shouldFloat && styles.labelFocused,
-    ];
+    const labelStyle = cn(styles, 'label', {
+      labelError: hasError,
+      labelFocused: !hasError && shouldFloat,
+    });
 
     const handleFocus: TextInputProps['onFocus'] = (e) => {
       logger.debug('[Input] focus', { label });
@@ -92,7 +93,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 
           <TextInput
             ref={ref}
-            style={[styles.input, showClear && styles.inputWithClear]}
+            style={cn(styles, 'input', { inputWithClear: showClear })}
             value={value}
             onChangeText={onChangeText}
             onFocus={handleFocus}

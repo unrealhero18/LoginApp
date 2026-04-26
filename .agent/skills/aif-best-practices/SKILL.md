@@ -141,6 +141,25 @@ feature/
 - Internal modules prefixed with `_` or in `internal/`
 - Avoid circular dependencies
 
+### React Native Styling
+```tsx
+// ✅ Good: Using cn utility for conditional styles
+import { cn } from '@/utils/styles';
+<Pressable style={[cn(styles, 'base', { disabled }), style]}>
+  <Text>Submit</Text>
+</Pressable>
+
+// ❌ Bad: Inline ternary arrays with booleans
+<Pressable style={[styles.base, style, disabled && styles.disabled]}>
+  <Text>Submit</Text>
+</Pressable>
+```
+
+**Rules:**
+- Use the `cn` utility from `src/utils/styles.ts` for all conditional styling logic.
+- Avoid using inline conditional arrays.
+- Do not use Tailwind CSS / NativeWind for standard components; rely on `StyleSheet` combined with `cn`.
+
 ---
 
 ## Error Handling
