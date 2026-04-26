@@ -3,6 +3,7 @@
   "compilerOptions": {
     "types": ["jest"],
     "lib": [
+      "dom",
       "es2019",
       "es2020.bigint",
       "es2020.date",

@@ -1,4 +1,5 @@
 import { apiFetch } from '@/services/api/client';
+import { TOKEN_EXPIRES_IN_MINS } from '@/utils/jwt';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
 
@@ -16,7 +17,7 @@ export async function login(payload: LoginPayload): Promise<AuthToken> {
     method: 'POST',
     body: JSON.stringify({
       ...payload,
-      expiresInMins: 1, // Session expires after 1 minute
+      expiresInMins: TOKEN_EXPIRES_IN_MINS,
     }),
     skipAuthHandler: true,
   });

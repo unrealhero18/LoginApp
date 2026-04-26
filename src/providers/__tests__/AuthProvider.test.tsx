@@ -2,6 +2,7 @@ import React from 'react';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { AppState, Alert } from 'react-native';
 import * as Keychain from 'react-native-keychain';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +11,7 @@ import * as authService from '@/services/api/auth';
 import * as client from '@/services/api/client';
 import { ApiError } from '@/services/api/client';
 import { createTestQueryClient } from '@/test-utils/renderWithAuth';
+import { getTokenExpiryMs, isTokenExpired } from '@/utils/jwt';
 
 import type { AuthToken, AuthUser } from '@/types/auth';
 
@@ -28,11 +30,14 @@ jest.mock('@/services/api/client', () => {
     setOnUnauthorized: jest.fn(),
   };
 });
+jest.mock('@/utils/jwt');
 
 const mockedKeychain = jest.mocked(Keychain);
 const mockedAuth = jest.mocked(authService);
 const mockedClient = jest.mocked(client);
 const mockedNetInfo = jest.mocked(require('@react-native-community/netinfo'));
+const mockedIsTokenExpired = jest.mocked(isTokenExpired);
+const mockedGetTokenExpiryMs = jest.mocked(getTokenExpiryMs);
 
 const TOKEN: AuthToken = {
   accessToken: 'access-1',
@@ -49,6 +54,8 @@ const USER: AuthUser = {
   image: 'https://dummyjson.com/icon/emilyjohnson.png',
 };
 
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = createTestQueryClient();
   return (
@@ -63,6 +70,8 @@ describe('AuthProvider', () => {
     jest.clearAllMocks();
     mockedKeychain.getGenericPassword.mockResolvedValue(false);
     mockedNetInfo.fetch.mockResolvedValue({ isConnected: true });
+    mockedIsTokenExpired.mockReturnValue(false);
+    mockedGetTokenExpiryMs.mockReturnValue(null);
   });
 
   it('finishes hydration as logged-out when no stored token exists and online', async () => {
@@ -282,5 +291,220 @@ describe('AuthProvider', () => {
     await waitFor(() =>
       expect(mockedKeychain.resetGenericPassword).toHaveBeenCalledTimes(1),
     );
+  });
+
+  describe('hydration with JWT expiry check', () => {
+    it('clears token without calling getMe when stored token is expired', async () => {
+      mockedKeychain.getGenericPassword.mockResolvedValue({
+        service: 'loginapp.auth',
+        username: 'auth-token',
+        password: JSON.stringify(TOKEN),
+        storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
+      });
+      mockedIsTokenExpired.mockReturnValue(true);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+      expect(mockedAuth.getMe).not.toHaveBeenCalled();
+      expect(result.current.token).toBeNull();
+      expect(result.current.user).toBeNull();
+    });
+
+    it('proceeds normally and restores session when stored token is valid', async () => {
+      mockedKeychain.getGenericPassword.mockResolvedValue({
+        service: 'loginapp.auth',
+        username: 'auth-token',
+        password: JSON.stringify(TOKEN),
+        storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
+      });
+      mockedAuth.getMe.mockResolvedValue(USER);
+      mockedIsTokenExpired.mockReturnValue(false);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      expect(mockedAuth.getMe).toHaveBeenCalled();
+      expect(result.current.token).toEqual(TOKEN);
+      expect(result.current.user).toEqual(USER);
+    });
+  });
+
+  describe('AppState foreground expiry check', () => {
+    let appStateChangeHandler: ((nextState: string) => void) | null = null;
+
+    beforeEach(() => {
+      jest.spyOn(AppState, 'addEventListener').mockImplementation((event, handler) => {
+        if (event === 'change') {
+          appStateChangeHandler = handler as (nextState: string) => void;
+        }
+        return { remove: jest.fn() };
+      });
+    });
+
+    afterEach(() => {
+      appStateChangeHandler = null;
+    });
+
+    it('triggers logout when token is expired on app foreground', async () => {
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      expect(result.current.token).toEqual(TOKEN);
+
+      mockedIsTokenExpired.mockReturnValue(true);
+
+      await act(async () => {
+        appStateChangeHandler?.('active');
+      });
+
+      await waitFor(() => expect(result.current.token).toBeNull());
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+    });
+
+    it('does not trigger logout when token is valid on app foreground', async () => {
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      await act(async () => {
+        appStateChangeHandler?.('active');
+      });
+
+      expect(result.current.token).toEqual(TOKEN);
+      expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
+    });
+
+    it('does not trigger logout when app transitions to background', async () => {
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      mockedIsTokenExpired.mockReturnValue(true);
+
+      await act(async () => {
+        appStateChangeHandler?.('background');
+      });
+
+      expect(result.current.token).toEqual(TOKEN);
+      expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('foreground expiry timer', () => {
+    it('triggers logout when the scheduled expiry timer fires', async () => {
+      const BASE_TIME = 1745625600000;
+      jest.setSystemTime(BASE_TIME);
+
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+      
+      const expiryMs = BASE_TIME + 60_000;
+      mockedGetTokenExpiryMs.mockReturnValue(expiryMs);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      expect(result.current.token).toEqual(TOKEN);
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      await waitFor(() => expect(result.current.token).toBeNull());
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+    });
+
+    it('logs out immediately when token is already expired at schedule time', async () => {
+      const BASE_TIME = 1745625600000;
+      jest.setSystemTime(BASE_TIME);
+
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+      mockedGetTokenExpiryMs.mockReturnValue(BASE_TIME - 1_000);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      await waitFor(() => expect(result.current.token).toBeNull());
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+    });
+
+    it('does not schedule a timer when getTokenExpiryMs returns null', async () => {
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+      mockedGetTokenExpiryMs.mockReturnValue(null);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(result.current.token).toEqual(TOKEN);
+      expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
+    });
+
+    it('clears the scheduled timer when logout runs before it fires', async () => {
+      mockedAuth.login.mockResolvedValue(TOKEN);
+      mockedAuth.getMe.mockResolvedValue(USER);
+      mockedGetTokenExpiryMs.mockReturnValue(Date.now() + 60_000);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      // Advancing time after logout must not produce additional side effects
+      // (logout has already cleared the keychain once).
+      mockedKeychain.resetGenericPassword.mockClear();
+
+      await act(async () => {
+        jest.advanceTimersByTime(60_000);
+      });
+
+      expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
+    });
   });
 });

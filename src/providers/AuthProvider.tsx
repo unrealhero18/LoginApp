@@ -1,5 +1,12 @@
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
+import { AppState, Alert } from 'react-native';
 
 import NetInfo from '@react-native-community/netinfo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,6 +16,7 @@ import { getMe, login as loginRequest } from '@/services/api/auth';
 import { ApiError, setAuthToken, setOnUnauthorized } from '@/services/api/client';
 import { clearToken, loadToken, saveToken } from '@/services/storage/secureTokenStore';
 import { LoginProfileFetchError } from '@/utils/error';
+import { getTokenExpiryMs, isTokenExpired } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
@@ -51,6 +59,8 @@ export function AuthProvider({ children }: Props) {
   const [token, setToken] = useState<AuthToken | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+  const tokenRef = useRef<AuthToken | null>(null);
+  tokenRef.current = token;
 
   /**
    * Logs out the user by clearing state, storage, and the query cache.
@@ -150,15 +160,27 @@ export function AuthProvider({ children }: Props) {
       return;
     }
 
-    // 3. Set token in API client for subsequent requests
+    // 3. Reject expired tokens before making any network call
+    if (isTokenExpired(stored.accessToken)) {
+      logger.info('[AuthProvider] stored token expired on hydration — clearing session');
+      try {
+        await clearToken();
+      } catch (clearError) {
+        logger.error('[AuthProvider] failed to clear expired token on hydration', clearError);
+      }
+      setIsHydrating(false);
+      return;
+    }
+
+    // 4. Set token in API client for subsequent requests
     setAuthToken(stored.accessToken);
 
     try {
-      // 4. Verify session by fetching user profile
+      // 5. Verify session by fetching user profile
       const profile = await getMe();
       if (cancelledRef?.value) return;
 
-      // 5. Update state with restored session
+      // 6. Update state with restored session
       setToken(stored);
       setUser(profile);
     } catch (error) {
@@ -240,6 +262,61 @@ export function AuthProvider({ children }: Props) {
       setQueryClientUnauthorizedHandler(null);
     };
   }, [logout]);
+
+  /**
+   * Effect to check JWT expiry when the app returns to the foreground.
+   * Uses a ref to read the latest token without the effect re-registering on every token change.
+   */
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState !== 'active') return;
+
+      const currentToken = tokenRef.current;
+      if (!currentToken) return;
+
+      if (isTokenExpired(currentToken.accessToken)) {
+        logger.info('[AuthProvider] token expired on foreground — logging out');
+        Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+        logout().catch(() => {});
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [logout]);
+
+  /**
+   * Effect to schedule a logout exactly when the current token expires.
+   * Covers the case where the user keeps the app foregrounded past expiry —
+   * the AppState listener alone cannot help here because no transition fires.
+   *
+   * Note: setTimeout is paused while the JS thread sleeps (app backgrounded
+   * on iOS). The AppState listener above is the safety net for that case.
+   */
+  useEffect(() => {
+    if (!token) return;
+
+    const expiryMs = getTokenExpiryMs(token.accessToken);
+    if (expiryMs === null) return;
+
+    const msUntilExpiry = expiryMs - Date.now();
+
+    if (msUntilExpiry <= 0) {
+      logger.info('[AuthProvider] token already expired on schedule — logging out');
+      Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+      logout().catch(() => {});
+      return;
+    }
+
+    const timerId = setTimeout(() => {
+      logger.info('[AuthProvider] token expiry timer fired — logging out');
+      Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+      logout().catch(() => {});
+    }, msUntilExpiry);
+
+    return () => clearTimeout(timerId);
+  }, [token, logout]);
 
   // Note: useMemo is intentionally used here to prevent consumers from
   // re-rendering on every AuthProvider render.
