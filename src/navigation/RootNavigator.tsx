@@ -7,6 +7,7 @@ import { Routes } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
 import HomeScreen from '@/screens/HomeScreen';
 import LoginScreen from '@/screens/LoginScreen';
+import OfflineScreen from '@/screens/OfflineScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 
 import { Colors } from '@/theme/colors';
@@ -43,7 +44,7 @@ function AppNavigator() {
 }
 
 export default function RootNavigator() {
-  const { token, isHydrating } = useAuth();
+  const { token, isHydrating, isOffline } = useAuth();
 
   if (isHydrating) {
     return (
@@ -51,6 +52,10 @@ export default function RootNavigator() {
         <ActivityIndicator color={Colors.primary} />
       </View>
     );
+  }
+
+  if (isOffline) {
+    return <OfflineScreen />;
   }
 
   return token ? <AppNavigator /> : <AuthNavigator />;

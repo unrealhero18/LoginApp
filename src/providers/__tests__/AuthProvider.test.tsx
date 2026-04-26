@@ -8,10 +8,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { AuthProvider } from '@/providers/AuthProvider';
 import * as authService from '@/services/api/auth';
 import * as client from '@/services/api/client';
+import { ApiError } from '@/services/api/client';
 import { createTestQueryClient } from '@/test-utils/renderWithAuth';
 
 import type { AuthToken, AuthUser } from '@/types/auth';
 
+jest.mock('@react-native-community/netinfo', () => ({
+  fetch: jest.fn(),
+  addEventListener: jest.fn(() => jest.fn()),
+}));
 jest.mock('@/services/api/auth');
 jest.mock('@/services/api/client', () => {
   const actual = jest.requireActual<typeof import('@/services/api/client')>(
@@ -27,6 +32,7 @@ jest.mock('@/services/api/client', () => {
 const mockedKeychain = jest.mocked(Keychain);
 const mockedAuth = jest.mocked(authService);
 const mockedClient = jest.mocked(client);
+const mockedNetInfo = jest.mocked(require('@react-native-community/netinfo'));
 
 const TOKEN: AuthToken = {
   accessToken: 'access-1',
@@ -56,14 +62,26 @@ describe('AuthProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedKeychain.getGenericPassword.mockResolvedValue(false);
+    mockedNetInfo.fetch.mockResolvedValue({ isConnected: true });
   });
 
-  it('finishes hydration as logged-out when no stored token exists', async () => {
+  it('finishes hydration as logged-out when no stored token exists and online', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
     expect(result.current.token).toBeNull();
     expect(result.current.user).toBeNull();
+    expect(result.current.isOffline).toBe(false);
+  });
+
+  it('sets isOffline=true even if no token exists when device is offline', async () => {
+    mockedNetInfo.fetch.mockResolvedValueOnce({ isConnected: false });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isHydrating).toBe(false));
+    expect(result.current.isOffline).toBe(true);
+    expect(result.current.token).toBeNull();
   });
 
   it('hydrates user when a stored token resolves successfully', async () => {
@@ -83,21 +101,68 @@ describe('AuthProvider', () => {
     expect(result.current.user).toEqual(USER);
   });
 
-  it('clears stored token if hydration getMe call fails', async () => {
+  it('clears stored token when hydration getMe returns an ApiError', async () => {
     mockedKeychain.getGenericPassword.mockResolvedValue({
       service: 'loginapp.auth',
       username: 'auth-token',
       password: JSON.stringify(TOKEN),
       storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
     });
-    mockedAuth.getMe.mockRejectedValueOnce(new Error('expired'));
+    mockedAuth.getMe.mockRejectedValueOnce(new ApiError(401, 'Unauthorized'));
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
     expect(result.current.token).toBeNull();
     expect(result.current.user).toBeNull();
+    expect(result.current.isOffline).toBe(false);
     expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+  });
+
+  it('sets isOffline=true and keeps token when hydration fails with a network error', async () => {
+    mockedKeychain.getGenericPassword.mockResolvedValue({
+      service: 'loginapp.auth',
+      username: 'auth-token',
+      password: JSON.stringify(TOKEN),
+      storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
+    });
+    mockedAuth.getMe.mockRejectedValueOnce(new Error('Network request failed'));
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isHydrating).toBe(false));
+    expect(result.current.isOffline).toBe(true);
+    // Token is NOT cleared from secure storage in the offline path
+    expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
+    // Component token state is null because setToken() is only called on success
+    expect(result.current.token).toBeNull();
+    expect(result.current.user).toBeNull();
+  });
+
+  it('retryHydration resets isHydrating, clears isOffline, and resolves session', async () => {
+    mockedKeychain.getGenericPassword.mockResolvedValue({
+      service: 'loginapp.auth',
+      username: 'auth-token',
+      password: JSON.stringify(TOKEN),
+      storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,
+    });
+    // First call fails with network error → offline
+    mockedAuth.getMe.mockRejectedValueOnce(new Error('Network request failed'));
+    // Second call (after retry) succeeds
+    mockedAuth.getMe.mockResolvedValueOnce(USER);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isOffline).toBe(true));
+
+    await act(async () => {
+      result.current.retryHydration();
+    });
+
+    await waitFor(() => expect(result.current.isHydrating).toBe(false));
+    expect(result.current.isOffline).toBe(false);
+    expect(result.current.token).toEqual(TOKEN);
+    expect(result.current.user).toEqual(USER);
   });
 
   it('login persists token, fetches profile, and updates state', async () => {

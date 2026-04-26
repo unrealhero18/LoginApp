@@ -76,6 +76,7 @@ Completed: 2026-04-25 (`feature/auth-flow`)
 - ✅ Unit tests: `useLogin` mutation, `useProfile` query, `AuthProvider` state transitions (delivered in `feature/auth-flow`, 2026-04-25)
 - ✅ Form validation — per-field error messages (username length, required fields) triggered on submit (delivered 2026-04-25)
 - 🔲 E2E smoke test: login → profile → logout flow
+- ✅ Offline state handling — `OfflineScreen` shown when `getMe()` fails with a network error during hydration; Reconnect button retries the session (delivered 2026-04-26)
 
 ---
 
@@ -85,4 +86,4 @@ Completed: 2026-04-25 (`feature/auth-flow`)
 - ❌ Token refresh (`refreshToken` flow)
 - ❌ Edit profile
 - ❌ Push notifications
-- ❌ Offline mode / optimistic queue
+- ❌ Offline optimistic queue (offline detection during hydration was delivered in Phase 3)

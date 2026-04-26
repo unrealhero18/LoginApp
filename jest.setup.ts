@@ -67,6 +67,11 @@ jest.mock('react-native-keychain', () => ({
   },
 }));
 
+jest.mock('@react-native-community/netinfo', () => ({
+  fetch: jest.fn().mockResolvedValue({ isConnected: true }),
+  addEventListener: jest.fn(() => jest.fn()),
+}));
+
 // --- Global Stubs ---
 globalThis.fetch = jest.fn();
 
@@ -79,6 +84,8 @@ focusManager.setEventListener(() => () => { });
 beforeEach(() => {
   jest.useFakeTimers();
   jest.spyOn(console, 'debug').mockImplementation(() => { });
+  jest.spyOn(console, 'info').mockImplementation(() => { });
+  jest.spyOn(console, 'log').mockImplementation(() => { });
   jest.spyOn(console, 'warn').mockImplementation(() => { });
 });
 
