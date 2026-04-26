@@ -14,12 +14,20 @@ pnpm ios                  # or: pnpm android
 
 > First-time iOS setup: run `bundle install` once before `pod install`.
 
+## Test Credentials
+
+| Username | Password |
+| :--- | :--- |
+| `emilys` | `emilyspass` |
+
+*See [Auth Flow](docs/auth-flow.md#test-accounts) for more test users.*
+
 ## Key Features
 
 - **Secure storage** — tokens persisted to iOS Keychain / Android Keystore via `react-native-keychain`. `AsyncStorage` is never used for tokens.
 - **Automatic hydration** — on startup `AuthProvider` rehydrates from the keychain and calls `GET /auth/me` before the first render.
 - **State-driven routing** — `RootNavigator` switches between `AuthStack` (Home, Login) and `AppStack` (Profile) based on auth state. Screens never call `navigate()` after logout.
-- **401/403 invalidation** — any API call or React Query cache error with these statuses triggers `AuthProvider.logout()` via a single registered handler.
+- **401/403 invalidation** — any API call or React Query cache error with these statuses triggers `AuthProvider.logout()` via a single registered handler. (Note: the session is set to expire in **1 minute** for easy testing of this flow).
 - **React Query integration** — `useLogin` mutation, `useProfile` query, and a global `QueryCache`/`MutationCache` error handler that bridges to the auth logout bridge.
 - **63 tests** — hooks, provider transitions, screen smoke tests, and keychain mock coverage.
 

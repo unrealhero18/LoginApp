@@ -10,6 +10,18 @@ LoginApp's authentication is built on the [DummyJSON Auth API](https://dummyjson
 - **Hydration:** on app start, `AuthProvider` reads the stored token, calls `GET /auth/me`, and only then renders the navigator. Failed hydration clears the keychain and falls through to `AuthStack`.
 - **Routing:** state-driven. `RootNavigator` reads `useAuth()` and renders `AppStack` (Profile) when a token is present, otherwise `AuthStack` (Home, Login). Screens never call `navigate(Login)` after logout — the stack swap happens automatically when state changes.
 - **401/403:** any `apiFetch` response with these statuses (or any React Query mutation/query that fails with one) triggers `AuthProvider.logout()` via a single registered handler. The user lands on `AuthStack` instantly, with React Query's cache cleared.
+- **Session Duration:** for testing purposes, the session is configured to expire in **1 minute**.
+
+## Test Accounts
+
+For testing, you can use any user from [DummyJSON Users](https://dummyjson.com/users). Most follow the pattern `username` + `pass`:
+
+| Role | Username | Password |
+| :--- | :--- | :--- |
+| **Admin** | `emilys` | `emilyspass` |
+| **Admin** | `michaelw` | `michaelwpass` |
+| **Moderator** | `oliviaw` | `oliviawpass` |
+| **User** | `averyp` | `averyppass` |
 
 ## Architecture
 
@@ -47,7 +59,7 @@ A small typed `apiFetch<T>` wrapper around `fetch` with:
 ### Auth service — `src/services/api/auth.ts`
 
 ```ts
-login(payload: LoginPayload): Promise<AuthToken>   // POST /auth/login
+login(payload: LoginPayload): Promise<AuthToken>   // POST /auth/login (enforces 1min session)
 getMe(): Promise<AuthUser>                          // GET /auth/me
 ```
 
@@ -122,7 +134,7 @@ Both paths route through the same handler. Logout is idempotent — keychain, in
 
 ## Configuration
 
-- **Environment:** none. Base URL is hard-coded in `src/services/api/client.ts`.
+- **Environment:** base URL and environment constants are located in `src/constants/env.ts`.
 - **Native:** iOS requires `pod install` after pulling. The keychain entry uses service name `loginapp.auth`.
 
 ## Testing

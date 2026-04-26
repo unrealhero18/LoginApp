@@ -1,6 +1,7 @@
 export type LoginPayload = {
   username: string;
   password: string;
+  expiresInMins?: number;
 };
 
 export type AuthToken = {

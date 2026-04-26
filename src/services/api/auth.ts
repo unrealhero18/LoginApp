@@ -14,7 +14,10 @@ export async function login(payload: LoginPayload): Promise<AuthToken> {
   // the global unauthorized handler so a failed login does not trigger logout.
   return apiFetch<AuthToken>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      expiresInMins: 1, // Session expires after 1 minute
+    }),
     skipAuthHandler: true,
   });
 }
