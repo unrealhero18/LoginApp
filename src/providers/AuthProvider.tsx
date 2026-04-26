@@ -82,6 +82,7 @@ export function AuthProvider({ children }: Props) {
     } catch (error) {
       logger.error('[AuthProvider] failed to clear token on logout', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient]);
 
   /**
@@ -126,6 +127,7 @@ export function AuthProvider({ children }: Props) {
         throw new LoginProfileFetchError(error);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -169,6 +171,9 @@ export function AuthProvider({ children }: Props) {
       } catch (clearError) {
         logger.error('[AuthProvider] failed to clear expired token on hydration', clearError);
       }
+      // Note: We omit Alert.alert here because the app hasn't rendered yet.
+      // Silently dropping to the login screen is less jarring than a popup
+      // before the first frame.
       setIsHydrating(false);
       return;
     }
@@ -207,6 +212,7 @@ export function AuthProvider({ children }: Props) {
         setIsHydrating(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -314,7 +320,13 @@ export function AuthProvider({ children }: Props) {
       // listener), tokenRef.current will be null — skip to avoid a double-logout.
       if (!tokenRef.current) return;
       logger.info('[AuthProvider] token expiry timer fired — logging out');
-      Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+
+      // Only show the alert if the app is currently in the foreground.
+      // If backgrounded, the AppState listener will handle the alert on foreground.
+      if (AppState.currentState === 'active') {
+        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+      }
+
       logout().catch(() => {});
     }, msUntilExpiry);
 

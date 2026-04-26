@@ -420,7 +420,7 @@ describe('AuthProvider', () => {
 
       mockedAuth.login.mockResolvedValue(TOKEN);
       mockedAuth.getMe.mockResolvedValue(USER);
-      
+
       const expiryMs = BASE_TIME + 60_000;
       mockedGetTokenExpiryMs.mockReturnValue(expiryMs);
 
