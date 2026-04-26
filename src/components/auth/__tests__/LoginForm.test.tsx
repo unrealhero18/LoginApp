@@ -66,11 +66,36 @@ describe('LoginForm', () => {
     );
 
     const loginButton = getByText('Login');
-    act(() => {
-      fireEvent.press(loginButton);
-    });
+    // Button is disabled, so press should not trigger anything
+    fireEvent.press(loginButton);
+
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
+
+
+  it('shows specific validation error for short username', () => {
+    const { getByLabelText, getByText } = render(
+      <LoginForm
+        onSubmit={mockOnSubmit}
+        isLoading={false}
+        error={null}
+        onResetError={mockOnResetError}
+      />,
+    );
+
+    act(() => {
+      fireEvent.changeText(getByLabelText('Username'), 'em');
+      fireEvent.changeText(getByLabelText('Password'), 'password123');
+    });
+
+    act(() => {
+      fireEvent.press(getByText('Login'));
+    });
+
+    expect(getByText('Username is invalid')).toBeTruthy();
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+
 
   it('calls onResetError when input value changes and error exists', () => {
     const { getByLabelText } = render(

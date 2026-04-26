@@ -63,31 +63,81 @@ describe('useForm', () => {
     expect(onValueChange).toHaveBeenCalled();
   });
 
-  it('should return correct isValid state based on validate function', () => {
-    const validate = (values: typeof initialValues) =>
-      values.username.length > 0 && values.password.length > 0;
-
-    type HookProps = {
-      valFunc: (values: typeof initialValues) => boolean;
+  it('should return correct errors state based on validate function on submit', () => {
+    const validate = (values: typeof initialValues) => {
+      const errors: Partial<Record<keyof typeof initialValues, string>> = {};
+      if (!values.username) errors.username = 'Username is required';
+      if (!values.password) errors.password = 'Password is required';
+      return errors;
     };
 
-    const { result } = renderHook(
-      ({ valFunc }: HookProps) => useForm<typeof initialValues>({ initialValues, onSubmit, validate: valFunc }),
-      {
-        initialProps: { valFunc: validate },
-      }
+    const { result } = renderHook(() =>
+      useForm<typeof initialValues>({ initialValues, onSubmit, validate }),
     );
 
     expect(result.current.isValid).toBe(false);
+    expect(result.current.errors).toEqual({});
+
+    act(() => {
+      result.current.handleSubmit();
+    });
+
+    expect(result.current.isValid).toBe(false);
+    expect(result.current.errors.username).toBe('Username is required');
+    expect(onSubmit).not.toHaveBeenCalled();
 
     act(() => {
       result.current.handleChange('username')('testuser');
-    });
-    expect(result.current.isValid).toBe(false);
-
-    act(() => {
       result.current.handleChange('password')('password123');
     });
+
+    // Errors are cleared automatically on change
+    expect(result.current.errors.username).toBeUndefined();
+
+    act(() => {
+      result.current.handleSubmit();
+    });
+
     expect(result.current.isValid).toBe(true);
+    expect(result.current.errors).toEqual({});
+    expect(onSubmit).toHaveBeenCalledWith({
+      username: 'testuser',
+      password: 'password123',
+    });
+  });
+
+  it('should return correct isComplete state', () => {
+    const { result } = renderHook(() => useForm({ initialValues, onSubmit }));
+
+    expect(result.current.isComplete).toBe(false);
+
+    act(() => {
+      result.current.handleChange('username')('t');
+    });
+    expect(result.current.isComplete).toBe(false);
+
+    act(() => {
+      result.current.handleChange('password')('p');
+    });
+    expect(result.current.isComplete).toBe(true);
+  });
+
+  it('should reset errors when resetErrors is called', () => {
+    const validate = () => ({ username: 'error' });
+    const { result } = renderHook(() =>
+      useForm({ initialValues, onSubmit, validate }),
+    );
+
+    act(() => {
+      result.current.handleSubmit();
+    });
+
+    expect(result.current.errors.username).toBe('error');
+
+    act(() => {
+      result.current.resetErrors();
+    });
+
+    expect(result.current.errors).toEqual({});
   });
 });

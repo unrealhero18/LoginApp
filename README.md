@@ -21,7 +21,7 @@ pnpm ios                  # or: pnpm android
 - **State-driven routing** — `RootNavigator` switches between `AuthStack` (Home, Login) and `AppStack` (Profile) based on auth state. Screens never call `navigate()` after logout.
 - **401/403 invalidation** — any API call or React Query cache error with these statuses triggers `AuthProvider.logout()` via a single registered handler.
 - **React Query integration** — `useLogin` mutation, `useProfile` query, and a global `QueryCache`/`MutationCache` error handler that bridges to the auth logout bridge.
-- **52 tests** — hooks, provider transitions, screen smoke tests, and keychain mock coverage.
+- **63 tests** — hooks, provider transitions, screen smoke tests, and keychain mock coverage.
 
 ## Tech Stack
 

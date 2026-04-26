@@ -74,6 +74,7 @@ Completed: 2026-04-25 (`feature/auth-flow`)
 - 🔲 Accessibility labels on all inputs and buttons
 - 🔲 Dark mode tested on iOS and Android
 - ✅ Unit tests: `useLogin` mutation, `useProfile` query, `AuthProvider` state transitions (delivered in `feature/auth-flow`, 2026-04-25)
+- ✅ Form validation — per-field error messages (username length, required fields) triggered on submit (delivered 2026-04-25)
 - 🔲 E2E smoke test: login → profile → logout flow
 
 ---
