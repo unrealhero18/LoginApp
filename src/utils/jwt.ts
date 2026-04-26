@@ -2,8 +2,6 @@ import { jwtDecode } from 'jwt-decode';
 
 import { logger } from '@/utils/logger';
 
-export const TOKEN_EXPIRES_IN_MINS = 1;
-
 type JwtPayload = {
   exp?: number;
 };

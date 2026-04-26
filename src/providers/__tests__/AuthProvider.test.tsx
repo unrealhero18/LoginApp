@@ -506,5 +506,61 @@ describe('AuthProvider', () => {
 
       expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
     });
+
+    it('cancels the old timer and arms a new one when the token is replaced', async () => {
+      // Verifies the useEffect([token, logout]) dependency: swapping the token
+      // must cancel the previous timer and schedule a fresh one. This is the
+      // invariant that a future token-refresh flow depends on.
+      const BASE_TIME = 1745625600000;
+      jest.setSystemTime(BASE_TIME);
+
+      const TOKEN_A: typeof TOKEN = { ...TOKEN, accessToken: 'access-a' };
+      const TOKEN_B: typeof TOKEN = { ...TOKEN, accessToken: 'access-b' };
+
+      // TOKEN_A expires in 30 s; TOKEN_B expires in 90 s from BASE_TIME.
+      mockedGetTokenExpiryMs
+        .mockReturnValueOnce(BASE_TIME + 30_000)  // called when TOKEN_A is set
+        .mockReturnValueOnce(BASE_TIME + 90_000); // called when TOKEN_B is set
+
+      mockedAuth.getMe.mockResolvedValue(USER);
+
+      // First login → TOKEN_A
+      mockedAuth.login.mockResolvedValueOnce(TOKEN_A);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isHydrating).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      expect(result.current.token).toEqual(TOKEN_A);
+
+      // Second login → TOKEN_B (simulates token refresh / re-login)
+      mockedAuth.login.mockResolvedValueOnce(TOKEN_B);
+
+      await act(async () => {
+        await result.current.login({ username: 'emily', password: 'secret' });
+      });
+
+      expect(result.current.token).toEqual(TOKEN_B);
+
+      // Advancing to TOKEN_A's original deadline must NOT trigger logout —
+      // the old timer should have been cleared when TOKEN_B replaced TOKEN_A.
+      await act(async () => {
+        jest.advanceTimersByTime(30_000);
+      });
+
+      expect(result.current.token).toEqual(TOKEN_B);
+      expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
+
+      // Advancing to TOKEN_B's deadline MUST trigger logout.
+      await act(async () => {
+        jest.advanceTimersByTime(60_000); // total 90 s elapsed
+      });
+
+      await waitFor(() => expect(result.current.token).toBeNull());
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
+    });
   });
 });

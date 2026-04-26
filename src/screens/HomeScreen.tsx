@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/common/Button';
+import { AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { AuthStackParamList } from '@/navigation/RootNavigator';
 
@@ -15,7 +16,7 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <PrimaryButton
-        title="Go to login"
+        title={AuthMessages.GO_TO_LOGIN_BUTTON}
         onPress={() => navigation.navigate(Routes.LOGIN)}
       />
     </View>

@@ -1,5 +1,6 @@
+import { TOKEN_EXPIRES_IN_MINS } from '@/constants/auth';
+
 import { apiFetch } from '@/services/api/client';
-import { TOKEN_EXPIRES_IN_MINS } from '@/utils/jwt';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
 

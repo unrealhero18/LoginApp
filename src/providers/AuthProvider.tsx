@@ -11,6 +11,7 @@ import { AppState, Alert } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { ErrorMessages } from '@/constants/messages';
 import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
 import { getMe, login as loginRequest } from '@/services/api/auth';
 import { ApiError, setAuthToken, setOnUnauthorized } from '@/services/api/client';
@@ -187,9 +188,8 @@ export function AuthProvider({ children }: Props) {
       if (cancelledRef?.value) return;
 
       if (error instanceof ApiError) {
-        // API-level rejection (expired/invalid token) — clear everything
         logger.info('[AuthProvider] hydration failed; clearing stored token', error);
-        Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
         setAuthToken(null);
         setIsOffline(false);
         try {
@@ -276,7 +276,7 @@ export function AuthProvider({ children }: Props) {
 
       if (isTokenExpired(currentToken.accessToken)) {
         logger.info('[AuthProvider] token expired on foreground — logging out');
-        Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
         logout().catch(() => {});
       }
     });
@@ -304,14 +304,17 @@ export function AuthProvider({ children }: Props) {
 
     if (msUntilExpiry <= 0) {
       logger.info('[AuthProvider] token already expired on schedule — logging out');
-      Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+      Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
       logout().catch(() => {});
       return;
     }
 
     const timerId = setTimeout(() => {
+      // Guard: if logout already ran (e.g. via the 401 handler or AppState
+      // listener), tokenRef.current will be null — skip to avoid a double-logout.
+      if (!tokenRef.current) return;
       logger.info('[AuthProvider] token expiry timer fired — logging out');
-      Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+      Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
       logout().catch(() => {});
     }, msUntilExpiry);
 
