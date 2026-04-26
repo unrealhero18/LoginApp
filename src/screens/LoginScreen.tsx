@@ -1,23 +1,34 @@
 import React from 'react';
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
 
-import { AppText } from '@/components/common/AppText';
-import { PrimaryButton } from '@/components/common/Button';
+import { LoginForm } from '@/components/auth/LoginForm';
 import { Routes } from '@/constants/routes';
-import { RootStackParamList } from '@/navigation/RootNavigator';
+import { useLogin } from '@/hooks/useLogin';
+import { AuthStackParamList } from '@/navigation/RootNavigator';
 
 import { Spacing } from '@/theme/spacing';
 
-type Props = NativeStackScreenProps<RootStackParamList, Routes.LOGIN>;
+type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen(_: Props) {
+  const { mutate, isPending, error, reset } = useLogin();
+
   return (
-    <View style={styles.container}>
-      <AppText fontWeight="600" style={styles.title}>Login Screen</AppText>
-      <PrimaryButton title="Back to Home" onPress={() => navigation.goBack()} />
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <LoginForm
+          onSubmit={mutate}
+          isLoading={isPending}
+          error={error}
+          onResetError={reset}
+        />
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -26,9 +37,5 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.screenPadding,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    marginBottom: Spacing.lg,
   },
 });

@@ -1,52 +1,59 @@
-import React from 'react';
+import { View } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
-import { SecondaryButton } from '@/components/common/Button/SecondaryButton';
-import { ButtonBase } from '@/components/common/Button/ButtonBase';
 
-describe('SecondaryButton', () => {
+import { ButtonBase } from '../ButtonBase';
+
+describe('ButtonBase', () => {
   it('renders correctly', async () => {
     await ReactTestRenderer.act(async () => {
       ReactTestRenderer.create(
-        <SecondaryButton title="Test Button" />
+        <ButtonBase>
+          <View />
+        </ButtonBase>
       );
     });
   });
 
-  it('renders the title', async () => {
+  it('renders children', async () => {
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
-        <SecondaryButton title="Test Button" />
+        <ButtonBase>
+          <View testID="child" />
+        </ButtonBase>
       );
     });
     const root = component!.root;
-    const text = root.findByProps({ children: 'Test Button' });
-    expect(text).toBeDefined();
+    expect(root.findByProps({ testID: 'child' })).toBeDefined();
   });
 
-  it('passes onPress to ButtonBase', async () => {
+  it('handles onPress', async () => {
     const onPressMock = jest.fn();
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
-        <SecondaryButton title="Test Button" onPress={onPressMock} />
+        <ButtonBase onPress={onPressMock}>
+          <View />
+        </ButtonBase>
       );
     });
     const root = component!.root;
-    const buttonBase = root.findByType(ButtonBase);
-    buttonBase.props.onPress();
+    const pressable = root.findByProps({ onPress: onPressMock });
+    pressable.props.onPress();
     expect(onPressMock).toHaveBeenCalled();
   });
 
-  it('passes disabled to ButtonBase', async () => {
+  it('respects disabled prop', async () => {
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       component = ReactTestRenderer.create(
-        <SecondaryButton title="Test Button" disabled={true} />
+        <ButtonBase disabled={true}>
+          <View />
+        </ButtonBase>
       );
     });
     const root = component!.root;
-    const buttonBase = root.findByType(ButtonBase);
-    expect(buttonBase.props.disabled).toBe(true);
+    const pressable = root.findByProps({ disabled: true });
+    expect(pressable.props.disabled).toBe(true);
   });
 });

@@ -3,7 +3,6 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleProp, TextStyle } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
-
 import { Spacing, Timing, Typography } from '@/theme';
 
 

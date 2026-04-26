@@ -82,6 +82,12 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 - Constants (non-enum): `SCREAMING_SNAKE_CASE`.
 - Enum members: `SCREAMING_SNAKE_CASE` (as in `Routes.LOGIN`).
 
+## Optimization
+
+- **NO PREMATURE OPTIMIZATION**: Avoid using `useCallback` or `useMemo` unless there is a measured performance bottleneck or a specific requirement for reference stability (e.g., dependencies of other hooks or `React.memo` components).
+  - In most cases, the overhead of dependency tracking in these hooks exceeds the cost of re-creating small functions or objects.
+  - If the consumer of a hook passes non-memoized functions (like inline arrows), `useCallback`/`useMemo` inside the hook are useless and should be avoided.
+
 ## Commits
 
 - Follow Conventional Commits: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`.

@@ -1,22 +1,64 @@
 import React from 'react';
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
+import { ErrorMessage } from '@/components/common/ErrorMessage';
+import { ErrorMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
-import { RootStackParamList } from '@/navigation/RootNavigator';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { AppStackParamList } from '@/navigation/RootNavigator';
 
+import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
 
-type Props = NativeStackScreenProps<RootStackParamList, Routes.PROFILE>;
+type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
 
-export default function ProfileScreen({ navigation }: Props) {
+const AVATAR_SIZE = 96;
+
+export default function ProfileScreen(_: Props) {
+  const { logout } = useAuth();
+  const { data, isError, isFetching, isLoading, refetch } = useProfile();
+
+  if (!data) {
+    // `isFetching` is checked before `isError` so a Retry-triggered refetch
+    // shows a spinner instead of leaving the user on the error screen with no
+    // visual feedback (TanStack keeps `isError` true until the refetch settles).
+    if (isFetching || isLoading) {
+      return (
+        <View style={styles.container}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      );
+    }
+
+    if (isError) {
+      return (
+        <View style={styles.container}>
+          <ErrorMessage message={ErrorMessages.PROFILE_FAILURE} testID="profile-error" />
+          <PrimaryButton title="Retry" onPress={() => refetch()} />
+        </View>
+      );
+    }
+
+    return null;
+  }
+
   return (
     <View style={styles.container}>
-      <AppText fontWeight="600" style={styles.title}>Profile Screen</AppText>
-      <PrimaryButton title="Back to Home" onPress={() => navigation.goBack()} />
+      <Image source={{ uri: data.image }} style={styles.avatar} />
+      <AppText fontWeight="600" style={styles.name}>
+        {data.firstName} {data.lastName}
+      </AppText>
+      <AppText style={styles.meta}>{data.username}</AppText>
+      <AppText style={styles.meta}>{data.email}</AppText>
+
+      <View style={styles.actions}>
+        <PrimaryButton title="Logout" onPress={() => logout()} />
+      </View>
     </View>
   );
 }
@@ -28,7 +70,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    backgroundColor: Colors.GRAY_LIGHT,
     marginBottom: Spacing.lg,
+  },
+  name: {
+    marginBottom: Spacing.sm,
+  },
+  meta: {
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  actions: {
+    width: '100%',
+    marginTop: Spacing.xl,
   },
 });

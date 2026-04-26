@@ -1,8 +1,9 @@
 module.exports = {
   preset: '@react-native/jest-preset',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+
   moduleNameMapper: {
-    '\\.svg$': '<rootDir>/src/__mocks__/svgMock.tsx',
+    '\\.svg$': '<rootDir>/__mocks__/svgMock.tsx',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [
