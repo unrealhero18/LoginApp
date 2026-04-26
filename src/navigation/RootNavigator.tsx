@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Routes } from '@/constants/routes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 import HomeScreen from '@/screens/HomeScreen';
 import LoginScreen from '@/screens/LoginScreen';
 import OfflineScreen from '@/screens/OfflineScreen';

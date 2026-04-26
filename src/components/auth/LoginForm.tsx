@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { PrimaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { Input } from '@/components/common/Input';
-import { useForm } from '@/hooks/useForm';
+import { useForm } from '@/hooks';
 import { getLoginErrorMessage } from '@/utils/error';
 
 import { validateLogin } from '@/utils/validation';

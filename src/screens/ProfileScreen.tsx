@@ -8,8 +8,7 @@ import { PrimaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { ErrorMessages, AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
+import { useAuth, useProfile } from '@/hooks';
 import { AppStackParamList } from '@/navigation/RootNavigator';
 
 import { Colors } from '@/theme/colors';

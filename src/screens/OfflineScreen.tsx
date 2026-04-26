@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
 import { OfflineMessages } from '@/constants/messages';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';

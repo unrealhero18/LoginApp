@@ -5,7 +5,7 @@ import { Keyboard, StyleSheet, TouchableWithoutFeedback, KeyboardAvoidingView, P
 
 import { LoginForm } from '@/components/auth/LoginForm';
 import { Routes } from '@/constants/routes';
-import { useLogin } from '@/hooks/useLogin';
+import { useLogin } from '@/hooks';
 import { AuthStackParamList } from '@/navigation/RootNavigator';
 
 import { Spacing } from '@/theme/spacing';
