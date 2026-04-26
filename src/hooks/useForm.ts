@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Keyboard } from 'react-native';
 
 import { logger } from '@/utils/logger';
@@ -21,6 +21,7 @@ type UseFormReturn<T> = {
   handleSubmit: () => void;
   isValid: boolean;
   isComplete: boolean;
+  reset: () => void;
   resetErrors: () => void;
 };
 
@@ -42,44 +43,33 @@ export function useForm<T extends Record<string, unknown>>({
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<FormErrors<T>>({});
 
-  const resetErrors = () => setErrors({});
-
-  const handleChange =
-    <K extends keyof T>(name: K) =>
-      (value: T[K]) => {
-        setValues((prev) => ({
-          ...prev,
-          [name]: value,
-        }));
-
-        // Clear the per-field error for this field synchronously so there is
-        // no stale-closure risk and no cursor-reset side-effects from effects.
-        setErrors((prev) => {
-          if (prev[name] === undefined) return prev;
-          const next = { ...prev };
-          delete next[name];
-          return next;
-        });
-
-        onValueChange?.();
-
-        // Clear any global API error passed in from the parent.
-        if (error && onResetError) {
-          onResetError();
-        }
-      };
-
-  // Memoize so validate() runs once per render and is shared between
-  // isValid (used for UI state) and handleSubmit (used for gating onSubmit).
-  const validationResult = useMemo(
-    () => (validate ? validate(values) : {}),
-    [values, validate],
-  );
-
-  const isValid = Object.values(validationResult).every((e) => e === undefined || e === null || e === '');
+  const validationResult = validate?.(values) ?? {};
+  const isValid = !Object.values(validationResult).some(Boolean);
   const isComplete = Object.values(values).every(
     (v) => v !== '' && v !== null && v !== undefined,
   );
+
+  const handleChange =
+    <K extends keyof T>(name: K) =>
+    (value: T[K]) => {
+      setValues((prev) => ({ ...prev, [name]: value }));
+
+      // Clear the per-field error for this field synchronously so there is
+      // no stale-closure risk and no cursor-reset side-effects from effects.
+      setErrors((prev) => {
+        if (!(name in prev)) return prev;
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+
+      onValueChange?.();
+
+      // Clear any global API error passed in from the parent.
+      if (error) onResetError?.();
+    };
+
+  const resetErrors = () => setErrors({});
 
   const handleSubmit = () => {
     if (!isValid) {
@@ -93,13 +83,19 @@ export function useForm<T extends Record<string, unknown>>({
     onSubmit(values);
   };
 
+  const reset = () => {
+    setValues(initialValues);
+    resetErrors();
+  };
+
   return {
+    values,
     errors,
     handleChange,
     handleSubmit,
     isValid,
     isComplete,
+    reset,
     resetErrors,
-    values,
   };
 }

@@ -122,6 +122,48 @@ describe('useForm', () => {
     expect(result.current.isComplete).toBe(true);
   });
 
+  it('should consider 0 and false as complete values', () => {
+    const { result } = renderHook(() =>
+      useForm({
+        initialValues: { count: 0, active: false },
+        onSubmit: jest.fn(),
+      }),
+    );
+
+    // If we use Boolean(), these would be false. 
+    // They should be true (complete) for numeric/boolean fields.
+    expect(result.current.isComplete).toBe(true);
+  });
+
+  it('should maintain errors reference if the field being changed has no error', () => {
+    const { result } = renderHook(() =>
+      useForm({ initialValues, onSubmit })
+    );
+
+    const initialErrors = result.current.errors;
+
+    act(() => {
+      result.current.handleChange('username')('test');
+    });
+
+    // Reference should be identical to avoid unnecessary re-renders
+    expect(result.current.errors).toBe(initialErrors);
+  });
+
+  it('should reset values and errors when reset is called', () => {
+    const { result } = renderHook(() =>
+      useForm({ initialValues, onSubmit })
+    );
+
+    act(() => {
+      result.current.handleChange('username')('newuser');
+      result.current.reset();
+    });
+
+    expect(result.current.values).toEqual(initialValues);
+    expect(result.current.errors).toEqual({});
+  });
+
   it('should reset errors when resetErrors is called', () => {
     const validate = () => ({ username: 'error' });
     const { result } = renderHook(() =>
