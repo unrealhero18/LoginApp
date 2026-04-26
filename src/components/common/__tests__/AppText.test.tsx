@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
@@ -25,7 +24,9 @@ describe('AppText', () => {
   it('applies custom fontWeight', async () => {
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
-      component = ReactTestRenderer.create(<AppText fontWeight="600">Bold Text</AppText>);
+      component = ReactTestRenderer.create(
+        <AppText fontWeight="600">Bold Text</AppText>,
+      );
     });
     const root = component!.root;
     const text = root.findByType(Text);
@@ -36,7 +37,9 @@ describe('AppText', () => {
     const customStyle = { color: 'red' };
     let component: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
-      component = ReactTestRenderer.create(<AppText style={customStyle}>Styled Text</AppText>);
+      component = ReactTestRenderer.create(
+        <AppText style={customStyle}>Styled Text</AppText>,
+      );
     });
     const root = component!.root;
     const text = root.findByType(Text);

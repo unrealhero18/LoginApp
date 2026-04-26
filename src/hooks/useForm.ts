@@ -46,17 +46,17 @@ export function useForm<T extends Record<string, unknown>>({
   const validationResult = validate?.(values) ?? {};
   const isValid = !Object.values(validationResult).some(Boolean);
   const isComplete = Object.values(values).every(
-    (v) => v !== '' && v !== null && v !== undefined,
+    v => v !== '' && v !== null && v !== undefined,
   );
 
   const handleChange =
     <K extends keyof T>(name: K) =>
     (value: T[K]) => {
-      setValues((prev) => ({ ...prev, [name]: value }));
+      setValues(prev => ({ ...prev, [name]: value }));
 
       // Clear the per-field error for this field synchronously so there is
       // no stale-closure risk and no cursor-reset side-effects from effects.
-      setErrors((prev) => {
+      setErrors(prev => {
         if (!(name in prev)) return prev;
         const next = { ...prev };
         delete next[name];

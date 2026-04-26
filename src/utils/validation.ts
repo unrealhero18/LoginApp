@@ -1,4 +1,5 @@
 import { ValidationMessages } from '@/constants/messages';
+
 import type { LoginPayload } from '@/types/auth';
 import type { FormErrors } from '@/types/form';
 
@@ -8,7 +9,9 @@ import type { FormErrors } from '@/types/form';
  * Errors are only shown to the user on submit — the Login button is gated
  * separately by `isComplete` (all fields non-empty) inside `useForm`.
  */
-export const validateLogin = (values: LoginPayload): FormErrors<LoginPayload> => {
+export const validateLogin = (
+  values: LoginPayload,
+): FormErrors<LoginPayload> => {
   const errors: FormErrors<LoginPayload> = {};
 
   if (!values.username) {

@@ -1,7 +1,6 @@
-import React from 'react';
-
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
+import React from 'react';
 import * as Keychain from 'react-native-keychain';
 
 import { useProfile } from '@/hooks/useProfile';

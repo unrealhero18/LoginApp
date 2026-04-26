@@ -6,14 +6,14 @@ Everything you need to install, run, and test LoginApp locally.
 
 ## Prerequisites
 
-| Tool | Minimum version | Notes |
-|------|----------------|-------|
-| Node.js | 18 LTS | Use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schacon/fnm) |
-| pnpm | 8+ | `corepack enable` or `npm install -g pnpm` |
-| Ruby | 3.x | Required for CocoaPods (iOS only) |
-| CocoaPods | 1.14+ | Managed via Bundler — see below |
-| Xcode | 15+ | iOS builds (macOS only) |
-| Android Studio | Hedgehog+ | Android builds |
+| Tool           | Minimum version | Notes                                                                             |
+| -------------- | --------------- | --------------------------------------------------------------------------------- |
+| Node.js        | 18 LTS          | Use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schacon/fnm) |
+| pnpm           | 8+              | `corepack enable` or `npm install -g pnpm`                                        |
+| Ruby           | 3.x             | Required for CocoaPods (iOS only)                                                 |
+| CocoaPods      | 1.14+           | Managed via Bundler — see below                                                   |
+| Xcode          | 15+             | iOS builds (macOS only)                                                           |
+| Android Studio | Hedgehog+       | Android builds                                                                    |
 
 > Follow the [React Native environment setup guide](https://reactnative.dev/docs/set-up-your-environment) to install Xcode command-line tools and configure the Android SDK.
 

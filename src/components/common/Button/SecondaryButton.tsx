@@ -1,10 +1,8 @@
 import React from 'react';
-
 import { StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { ButtonBase } from '@/components/common/Button/ButtonBase';
-
 import { Colors } from '@/theme/colors';
 import { Typography } from '@/theme/typography';
 
@@ -16,11 +14,7 @@ type Props = {
 
 export function SecondaryButton({ title, disabled = false, onPress }: Props) {
   return (
-    <ButtonBase 
-      disabled={disabled} 
-      onPress={onPress} 
-      style={styles.background}
-    >
+    <ButtonBase disabled={disabled} onPress={onPress} style={styles.background}>
       <AppText fontWeight="500" style={styles.label}>
         {title}
       </AppText>

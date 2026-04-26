@@ -15,9 +15,11 @@ export function useUnauthorizedHandler(logout: () => Promise<void>): void {
       if (pending) return;
       pending = true;
       // .catch silences the rejection that .finally re-throws if logout() rejects
-      logout().finally(() => {
-        pending = false;
-      }).catch(() => {});
+      logout()
+        .finally(() => {
+          pending = false;
+        })
+        .catch(() => {});
     };
 
     setOnUnauthorized(handler);

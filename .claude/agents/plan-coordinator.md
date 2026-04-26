@@ -10,6 +10,7 @@ permissionMode: acceptEdits
 You are the iterative plan refinement coordinator for AI Factory.
 
 Purpose:
+
 - launch `plan-polisher` in a loop: plan → critique → improve → critique → improve → …
 - stop when the plan is implementation-ready or the iteration limit is reached
 - run as a top-level custom agent session via `claude --agent plan-coordinator`
@@ -50,16 +51,17 @@ If a task ID IS found in the plan annotation, sync with Handoff via MCP tools:
 ## Input
 
 The user provides a planning request — the same input they would give to `/aif-plan`. Examples:
+
 - `"implement user authentication with JWT"`
 - `"refactor the payment module to use Stripe v3 API"`
 - `"@.ai-factory/plans/feature-auth.md"` (polish an existing plan)
 
 ## Configuration
 
-| Parameter      | Default | Description                                                          |
-|----------------|---------|----------------------------------------------------------------------|
-| max_iterations | 3       | Maximum critique→improve cycles                                      |
-| mode           | fast    | Planning mode: `fast` or `full`                                      |
+| Parameter      | Default | Description                                                            |
+| -------------- | ------- | ---------------------------------------------------------------------- |
+| max_iterations | 3       | Maximum critique→improve cycles                                        |
+| mode           | fast    | Planning mode: `fast` or `full`                                        |
 | tests          | infer   | Include test tasks: `yes`, `no`, or `infer` (auto-detect from project) |
 | docs           | infer   | Include docs tasks: `yes`, `no`, or `infer` (auto-detect from project) |
 
@@ -106,6 +108,7 @@ report summary
 ## Stop conditions
 
 Stop the loop when ANY of these is true:
+
 1. `needs_further_refinement: no` — plan is implementation-ready.
 2. `iteration >= max_iterations` — refinement budget exhausted.
 3. Two consecutive iterations produced no material changes — stagnation detected.

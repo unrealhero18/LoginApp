@@ -1,10 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-
 import { Animated, StyleProp, TextStyle } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { Spacing, Timing, Typography } from '@/theme';
-
 
 const LABEL_FLOAT_TOP = Spacing.inputLabelFloatTop;
 const LABEL_REST_TOP = Spacing.inputLabelRestTop;

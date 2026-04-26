@@ -1,5 +1,4 @@
 import { type RefObject, useEffect } from 'react';
-
 import { Alert, AppState } from 'react-native';
 
 import { ErrorMessages } from '@/constants/messages';
@@ -16,7 +15,7 @@ export function useTokenExpiry(
   // Foreground listener: checks expiry when the app returns to active state.
   // Uses tokenRef to read the latest token without re-registering on each change.
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState !== 'active') return;
 
       const currentToken = tokenRef.current;
@@ -24,7 +23,10 @@ export function useTokenExpiry(
 
       if (isTokenExpired(currentToken.accessToken)) {
         logger.info('[AuthProvider] token expired on foreground — logging out');
-        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+        Alert.alert(
+          ErrorMessages.SESSION_EXPIRED_TITLE,
+          ErrorMessages.SESSION_EXPIRED,
+        );
         logout().catch(() => {});
       }
     });
@@ -48,8 +50,13 @@ export function useTokenExpiry(
     const msUntilExpiry = expiryMs - Date.now();
 
     if (msUntilExpiry <= 0) {
-      logger.info('[AuthProvider] token already expired on schedule — logging out');
-      Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+      logger.info(
+        '[AuthProvider] token already expired on schedule — logging out',
+      );
+      Alert.alert(
+        ErrorMessages.SESSION_EXPIRED_TITLE,
+        ErrorMessages.SESSION_EXPIRED,
+      );
       logout().catch(() => {});
       return;
     }
@@ -63,7 +70,10 @@ export function useTokenExpiry(
       // Only show the alert if the app is currently in the foreground.
       // If backgrounded, the AppState listener will handle the alert on foreground.
       if (AppState.currentState === 'active') {
-        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+        Alert.alert(
+          ErrorMessages.SESSION_EXPIRED_TITLE,
+          ErrorMessages.SESSION_EXPIRED,
+        );
       }
 
       logout().catch(() => {});

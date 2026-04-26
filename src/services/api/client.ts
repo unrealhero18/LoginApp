@@ -15,7 +15,11 @@ export class ApiError extends Error {
   readonly status: number;
   readonly skipAuthHandler: boolean;
 
-  constructor(status: number, message: string, skipAuthHandler: boolean = false) {
+  constructor(
+    status: number,
+    message: string,
+    skipAuthHandler: boolean = false,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -78,7 +82,10 @@ export function setOnUnauthorized(handler: (() => void) | null): void {
  * @throws {ApiError} If the response is not OK.
  * @throws {Error} For network failures or other unexpected errors.
  */
-export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init: ApiFetchOptions = {},
+): Promise<T> {
   const { skipAuthHandler = false, ...fetchInit } = init;
 
   const headers = new Headers(fetchInit.headers ?? {});
@@ -105,7 +112,10 @@ export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Pro
   // Handle unauthorized responses by triggering the global handler — unless
   // the caller explicitly opted out (login endpoint, public endpoints, etc.).
   if (response.status === 401 || response.status === 403) {
-    logger.info('[apiFetch] unauthorized response', { path, status: response.status });
+    logger.info('[apiFetch] unauthorized response', {
+      path,
+      status: response.status,
+    });
     if (!skipAuthHandler) {
       onUnauthorized?.();
     }

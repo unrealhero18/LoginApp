@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { render } from '@testing-library/react-native';
+import React from 'react';
 
 import { ErrorMessage } from '../ErrorMessage';
 
@@ -13,14 +12,18 @@ describe('ErrorMessage', () => {
   });
 
   it('renders nothing when message is empty', () => {
-    const { queryByTestId } = render(<ErrorMessage message="" testID="error-container" />);
+    const { queryByTestId } = render(
+      <ErrorMessage message="" testID="error-container" />,
+    );
 
     expect(queryByTestId('error-container')).toBeNull();
   });
 
   it('applies testID correctly', () => {
     const testID = 'login-error';
-    const { getByTestId } = render(<ErrorMessage message="Error" testID={testID} />);
+    const { getByTestId } = render(
+      <ErrorMessage message="Error" testID={testID} />,
+    );
 
     expect(getByTestId(testID)).toBeTruthy();
   });

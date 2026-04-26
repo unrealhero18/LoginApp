@@ -7,10 +7,12 @@ let onUnauthorizedHandler: (() => void) | null = null;
 
 /**
  * Sets a callback function to be executed when a React Query fetch fails with an unauthorized status.
- * 
+ *
  * @param handler - The callback function or null to remove it.
  */
-export function setQueryClientUnauthorizedHandler(handler: (() => void) | null): void {
+export function setQueryClientUnauthorizedHandler(
+  handler: (() => void) | null,
+): void {
   onUnauthorizedHandler = handler;
 }
 

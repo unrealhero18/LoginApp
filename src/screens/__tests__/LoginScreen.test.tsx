@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { fireEvent, waitFor } from '@testing-library/react-native';
+import React from 'react';
 
 import LoginScreen from '@/screens/LoginScreen';
 import * as authService from '@/services/api/auth';
@@ -22,10 +21,14 @@ jest.mock('@/services/api/client', () => {
 const mockedAuth = jest.mocked(authService);
 
 // Minimal navigation prop stub — the screen does not call into it.
-const navigationStub = {} as React.ComponentProps<typeof LoginScreen>['navigation'];
-const routeStub = { key: 'login', name: 'Login' as const, params: undefined } as React.ComponentProps<
+const navigationStub = {} as React.ComponentProps<
   typeof LoginScreen
->['route'];
+>['navigation'];
+const routeStub = {
+  key: 'login',
+  name: 'Login' as const,
+  params: undefined,
+} as React.ComponentProps<typeof LoginScreen>['route'];
 
 describe('LoginScreen', () => {
   beforeEach(() => {
@@ -46,7 +49,9 @@ describe('LoginScreen', () => {
   });
 
   it('shows a generic inline error when the login mutation fails with 401', async () => {
-    mockedAuth.login.mockRejectedValue(new ApiError(401, 'Invalid credentials'));
+    mockedAuth.login.mockRejectedValue(
+      new ApiError(401, 'Invalid credentials'),
+    );
 
     const { getByLabelText, getByText, findByTestId } = renderWithAuth(
       <LoginScreen navigation={navigationStub} route={routeStub} />,

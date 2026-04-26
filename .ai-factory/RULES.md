@@ -4,7 +4,7 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 
 ## Language & Types
 
-- **NO `any` POLICY**: The use of `any` is strictly forbidden across the entire codebase. 
+- **NO `any` POLICY**: The use of `any` is strictly forbidden across the entire codebase.
   - Use proper TypeScript types, generics, or `unknown` (with type guards) instead.
   - For React Native styles, use `StyleProp<ViewStyle | TextStyle | ImageStyle>`.
   - For events, use specific types like `NativeSyntheticEvent<TextInputFocusEventData>`.
@@ -18,11 +18,10 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 
 - Always use the `@/` path alias (maps to `src/`) — never use relative `../` paths.
 - Import order enforced by ESLint `import/order`:
-  1. `react` (first, always)
-  2. External packages (`react-native`, `@react-navigation/…`, `@tanstack/…`)
-  3. Internal absolute imports (`@/navigation`, `@/hooks`, `@/services`, `@/constants`, `@/types`)
-  4. Relative imports (siblings only — avoid)
-  5. Assets and theme (`@/theme/**`, `@/assets/**`)
+  1. External packages (`react`, `react-native`, `@react-navigation/…`, etc.)
+  2. Internal absolute imports (`@/navigation`, `@/hooks`, `@/services`, `@/constants`, `@/types`)
+  3. Relative imports (siblings only — avoid)
+  4. Assets and theme (`@/theme/**`, `@/assets/**`)
 - A blank line between each import group is required (ESLint enforced).
 - Alphabetical order within each group.
 

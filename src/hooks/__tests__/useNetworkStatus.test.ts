@@ -1,5 +1,5 @@
-import { act, renderHook, waitFor } from '@testing-library/react-native';
 import NetInfo from '@react-native-community/netinfo';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
@@ -38,9 +38,8 @@ describe('useNetworkStatus', () => {
     const { result } = renderHook(() => useNetworkStatus());
     await waitFor(() => expect(result.current.isConnected).toBe(true));
 
-    const listener = (mockedNetInfo.addEventListener as jest.Mock).mock.calls[0][0] as (
-      state: { isConnected: boolean | null },
-    ) => void;
+    const listener = (mockedNetInfo.addEventListener as jest.Mock).mock
+      .calls[0][0] as (state: { isConnected: boolean | null }) => void;
 
     act(() => {
       listener({ isConnected: false });

@@ -1,14 +1,5 @@
-import React, {
-  forwardRef,
-  useEffect,
-  useState,
-} from 'react';
-
-import {
-  TextInput,
-  TextInputProps,
-  View,
-} from 'react-native';
+import React, { forwardRef, useEffect, useState } from 'react';
+import { TextInput, TextInputProps, View } from 'react-native';
 
 import { logger } from '@/utils/logger';
 import { cn } from '@/utils/styles';
@@ -65,13 +56,13 @@ export const Input = forwardRef<TextInput, InputProps>(
       labelFocused: !hasError && shouldFloat,
     });
 
-    const handleFocus: TextInputProps['onFocus'] = (e) => {
+    const handleFocus: TextInputProps['onFocus'] = e => {
       logger.debug('[Input] focus', { label });
       setIsFocused(true);
       onFocus?.(e);
     };
 
-    const handleBlur: TextInputProps['onBlur'] = (e) => {
+    const handleBlur: TextInputProps['onBlur'] = e => {
       logger.debug('[Input] blur', { label, value });
       setIsFocused(false);
       onBlur?.(e);
@@ -111,9 +102,7 @@ export const Input = forwardRef<TextInput, InputProps>(
           )}
         </View>
 
-        {errorMessage && (
-          <InputError message={errorMessage} testID={testID} />
-        )}
+        {errorMessage && <InputError message={errorMessage} testID={testID} />}
       </View>
     );
   },

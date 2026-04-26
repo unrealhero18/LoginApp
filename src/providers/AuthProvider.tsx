@@ -1,6 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
-
 import { useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useRef, useState } from 'react';
 
 import { useAuthActions } from '@/hooks/useAuthActions';
 import { useHydration } from '@/hooks/useHydration';
@@ -27,14 +26,27 @@ export function AuthProvider({ children }: Props) {
   tokenRef.current = token;
 
   const { login, logout } = useAuthActions(queryClient, setUser, setToken);
-  const { retryHydration } = useHydration(setUser, setToken, setIsHydrating, setIsOffline);
+  const { retryHydration } = useHydration(
+    setUser,
+    setToken,
+    setIsHydrating,
+    setIsOffline,
+  );
   useUnauthorizedHandler(logout);
   useTokenExpiry(token, tokenRef, logout);
 
   // useMemo is intentional: prevents consumers from re-rendering on every
   // AuthProvider render when the context value hasn't changed.
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isHydrating, isOffline, login, logout, retryHydration }),
+    () => ({
+      user,
+      token,
+      isHydrating,
+      isOffline,
+      login,
+      logout,
+      retryHydration,
+    }),
     [user, token, isHydrating, isOffline, login, logout, retryHydration],
   );
 

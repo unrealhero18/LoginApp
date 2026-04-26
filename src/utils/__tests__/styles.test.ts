@@ -35,11 +35,16 @@ describe('cn utility', () => {
   });
 
   it('handles falsy values in inputs', () => {
-    expect(cn(styles, 'base', null, undefined, false, '')).toEqual([styles.base]);
+    expect(cn(styles, 'base', null, undefined, false, '')).toEqual([
+      styles.base,
+    ]);
   });
 
   it('handles nested arrays (standard clsx behavior)', () => {
-    expect(cn(styles, ['base', ['active']])).toEqual([styles.base, styles.active]);
+    expect(cn(styles, ['base', ['active']])).toEqual([
+      styles.base,
+      styles.active,
+    ]);
   });
 
   it('handles strings with multiple spaces', () => {
@@ -53,7 +58,7 @@ describe('cn utility', () => {
       cn(styles, 'base', isActive && 'active', isDisabled ? 'disabled' : null, [
         { nonExistent: true },
         'base',
-      ])
+      ]),
     ).toEqual([styles.base, styles.active, styles.base]);
   });
 });

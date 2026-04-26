@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 
 import { Spacing } from '@/theme/spacing';
@@ -12,7 +11,12 @@ type Props = {
   style?: ViewStyle;
 };
 
-export function ButtonBase({ children, disabled = false, onPress, style }: Props) {
+export function ButtonBase({
+  children,
+  disabled = false,
+  onPress,
+  style,
+}: Props) {
   return (
     <Pressable
       style={[cn(styles, 'base', { disabled }), style]}

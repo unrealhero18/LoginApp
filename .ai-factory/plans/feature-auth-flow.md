@@ -166,14 +166,14 @@
 
 Conventional Commits, scope-prefixed. Each checkpoint groups logically related tasks.
 
-| # | Tasks | Suggested message |
-|---|---|---|
-| 1 | T1 → T3 | `feat(auth): scaffold types, secure token store, and api client` |
-| 2 | T4 → T6 | `feat(auth): add provider, service, and 401 invalidation bridge` |
-| 3 | T7 | `refactor(nav): split root navigator into auth and app stacks` |
-| 4 | T8 → T9 | `feat(login): wire login mutation, inline errors, and pending state` |
-| 5 | T10 → T11 | `feat(profile): render authenticated user and add logout` |
-| 6 | T12 | `test(auth): cover login, profile, provider transitions, and screens` |
+| #   | Tasks     | Suggested message                                                     |
+| --- | --------- | --------------------------------------------------------------------- |
+| 1   | T1 → T3   | `feat(auth): scaffold types, secure token store, and api client`      |
+| 2   | T4 → T6   | `feat(auth): add provider, service, and 401 invalidation bridge`      |
+| 3   | T7        | `refactor(nav): split root navigator into auth and app stacks`        |
+| 4   | T8 → T9   | `feat(login): wire login mutation, inline errors, and pending state`  |
+| 5   | T10 → T11 | `feat(profile): render authenticated user and add logout`             |
+| 6   | T12       | `test(auth): cover login, profile, provider transitions, and screens` |
 
 ## Progress Tracker
 

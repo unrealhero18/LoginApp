@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Routes } from '@/constants/routes';
@@ -9,7 +8,6 @@ import HomeScreen from '@/screens/HomeScreen';
 import LoginScreen from '@/screens/LoginScreen';
 import OfflineScreen from '@/screens/OfflineScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
-
 import { Colors } from '@/theme/colors';
 
 export type AuthStackParamList = {
@@ -30,7 +28,10 @@ const screenOptions = { headerShown: false };
 
 function AuthNavigator() {
   return (
-    <AuthStack.Navigator initialRouteName={Routes.HOME} screenOptions={screenOptions}>
+    <AuthStack.Navigator
+      initialRouteName={Routes.HOME}
+      screenOptions={screenOptions}
+    >
       <AuthStack.Screen name={Routes.HOME} component={HomeScreen} />
       <AuthStack.Screen name={Routes.LOGIN} component={LoginScreen} />
     </AuthStack.Navigator>
@@ -39,7 +40,10 @@ function AuthNavigator() {
 
 function AppNavigator() {
   return (
-    <AppStack.Navigator initialRouteName={Routes.PROFILE} screenOptions={screenOptions}>
+    <AppStack.Navigator
+      initialRouteName={Routes.PROFILE}
+      screenOptions={screenOptions}
+    >
       <AppStack.Screen name={Routes.PROFILE} component={ProfileScreen} />
     </AppStack.Navigator>
   );

@@ -1,10 +1,8 @@
 import React from 'react';
-
 import { View } from 'react-native';
 
-import { AppText } from '@/components/common/AppText';
-
 import InfoIcon from '@/assets/icons/info.svg';
+import { AppText } from '@/components/common/AppText';
 
 import { styles } from './ErrorMessage.styles';
 
@@ -13,7 +11,10 @@ type ErrorMessageProps = {
   testID?: string;
 };
 
-export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, testID }) => {
+export const ErrorMessage: React.FC<ErrorMessageProps> = ({
+  message,
+  testID,
+}) => {
   if (!message) return null;
 
   return (
@@ -21,9 +22,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, testID }) =
       <View style={styles.iconContainer}>
         <InfoIcon />
       </View>
-      <AppText style={styles.message}>
-        {message}
-      </AppText>
+      <AppText style={styles.message}>{message}</AppText>
     </View>
   );
 };

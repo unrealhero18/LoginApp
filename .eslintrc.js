@@ -6,33 +6,9 @@ module.exports = {
     'import/order': [
       'error',
       {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          ['parent', 'sibling'],
-          'index',
-          'object',
-          'type',
-        ],
-        pathGroups: [
-          {
-            pattern: 'react',
-            group: 'external',
-            position: 'before',
-          },
-          {
-            pattern: '@/assets/**',
-            group: 'internal',
-            position: 'after',
-          },
-          {
-            pattern: '@/theme/**',
-            group: 'internal',
-            position: 'after',
-          },
-        ],
-        pathGroupsExcludedImportTypes: ['react'],
+        groups: ['builtin', 'external', 'internal', 'type'],
+        pathGroups: [],
+        pathGroupsExcludedImportTypes: [],
         'newlines-between': 'always',
         alphabetize: {
           order: 'asc',

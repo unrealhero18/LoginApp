@@ -1,11 +1,9 @@
-import React, { useMemo } from 'react';
-
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BackIcon from '@/assets/icons/back.svg';
-
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton, SecondaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
@@ -13,7 +11,6 @@ import { ErrorMessages, AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { useAuth, useProfile } from '@/hooks';
 import { AppStackParamList } from '@/navigation/RootNavigator';
-
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
 import { Typography } from '@/theme/typography';
@@ -42,8 +39,14 @@ export default function ProfileScreen(_: Props) {
     if (isError) {
       return (
         <View style={styles.centred}>
-          <ErrorMessage message={ErrorMessages.PROFILE_FAILURE} testID="profile-error" />
-          <PrimaryButton title={AuthMessages.RETRY_BUTTON} onPress={() => refetch()} />
+          <ErrorMessage
+            message={ErrorMessages.PROFILE_FAILURE}
+            testID="profile-error"
+          />
+          <PrimaryButton
+            title={AuthMessages.RETRY_BUTTON}
+            onPress={() => refetch()}
+          />
         </View>
       );
     }
@@ -63,7 +66,10 @@ export default function ProfileScreen(_: Props) {
           </AppText>
           <View style={styles.spacer} />
         </View>
-        <SecondaryButton title={AuthMessages.LOGOUT_BUTTON} onPress={() => logout()} />
+        <SecondaryButton
+          title={AuthMessages.LOGOUT_BUTTON}
+          onPress={() => logout()}
+        />
       </>
     );
   };

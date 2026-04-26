@@ -1,7 +1,7 @@
 ---
 name: aif-rules
 description: Add project-specific rules and conventions to the configured RULES.md artifact. Each invocation appends new rules. These rules are automatically loaded by /aif-implement before execution. Use when user says "add rule", "remember this", "convention", or "always do X".
-argument-hint: "[rule text or topic]"
+argument-hint: '[rule text or topic]'
 allowed-tools: Read Write Edit Glob Grep AskUserQuestion Questions
 disable-model-invocation: true
 ---
@@ -15,11 +15,13 @@ Add short, actionable rules and conventions for the current project. Rules are s
 AI Factory supports a three-level rules hierarchy:
 
 1. **RULES.md** - Axioms (universal project rules)
+
    - Managed by this skill (`/aif-rules`)
    - Short, flat list of hard requirements
    - Loaded by all skills
 
 2. **rules/base.md** - Project-specific base conventions
+
    - Created by `/aif` during project setup
    - Naming conventions, module boundaries, error handling patterns
    - Auto-detected from codebase analysis
@@ -36,10 +38,12 @@ AI Factory supports a three-level rules hierarchy:
 ### Step 0: Load Config
 
 **FIRST:** Read `.ai-factory/config.yaml` if it exists to resolve:
+
 - **Paths:** `paths.rules_file` and `paths.rules`
 - **Language:** `language.ui` for prompts
 
 If config.yaml doesn't exist, use defaults:
+
 - RULES.md: `.ai-factory/RULES.md`
 - rules/: `.ai-factory/rules/`
 - Language: `en` (English)
@@ -52,6 +56,7 @@ This file contains project-specific rules accumulated by `/aif-evolve` from patc
 codebase conventions, and tech-stack analysis. These rules are tailored to the current project.
 
 **How to apply skill-context rules:**
+
 - Treat them as **project-level overrides** for this skill's general instructions
 - When a skill-context rule conflicts with a general rule written in this SKILL.md,
   **the skill-context rule wins** (more specific context takes priority - same principle as nested CLAUDE.md files)
@@ -123,6 +128,7 @@ User wants to create or update area-specific rules:
    Default: `.ai-factory/rules/<area>.md`
 
 3. **Check if area file exists:**
+
    ```text
    Glob: <resolved rules dir>/<area>.md
    ```
@@ -157,11 +163,13 @@ User wants to create or update area-specific rules:
 6. **Append rule** using `Edit` at the end of the `## Rules` section.
 
 7. **Register the area in `.ai-factory/config.yaml`:**
+
    - Ensure `rules.<area>` points to the resolved area rules file path
    - If `config.yaml` does not exist yet, create a minimal config scaffold using defaults plus the new `rules.<area>` entry
    - Preserve existing `rules.base` and any other named `rules.<other-area>` entries
 
 8. **Confirm:**
+
    ```text
    Rule added to <resolved area rules file> and registered as `rules.<area>` in config.yaml:
 
@@ -176,6 +184,7 @@ User wants to create or update area-specific rules:
    - Area rules belong only in `<resolved rules dir>/<area>.md` plus the matching `rules.<area>` registration in `config.yaml`.
 
 **Common areas:**
+
 - `api` - REST/GraphQL API conventions
 - `frontend` - UI components, state management
 - `backend` - Services, business logic
@@ -210,6 +219,7 @@ Glob: <resolved RULES.md path>
 Use `Edit` to append the new rule as a `- ` list item at the end of the `## Rules` section.
 
 **Formatting rules:**
+
 - Each rule is a single `- ` line
 - Keep rules short and actionable (one sentence)
 - No categories, headers, or sub-lists - flat list only

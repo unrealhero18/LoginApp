@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { fireEvent, waitFor } from '@testing-library/react-native';
+import React from 'react';
 import * as Keychain from 'react-native-keychain';
 
 import ProfileScreen from '@/screens/ProfileScreen';
@@ -39,10 +38,14 @@ const USER: AuthUser = {
   image: 'https://dummyjson.com/icon/emilyjohnson.png',
 };
 
-const navigationStub = {} as React.ComponentProps<typeof ProfileScreen>['navigation'];
-const routeStub = { key: 'profile', name: 'Profile' as const, params: undefined } as React.ComponentProps<
+const navigationStub = {} as React.ComponentProps<
   typeof ProfileScreen
->['route'];
+>['navigation'];
+const routeStub = {
+  key: 'profile',
+  name: 'Profile' as const,
+  params: undefined,
+} as React.ComponentProps<typeof ProfileScreen>['route'];
 
 describe('ProfileScreen', () => {
   beforeEach(() => {
@@ -61,7 +64,9 @@ describe('ProfileScreen', () => {
       <ProfileScreen navigation={navigationStub} route={routeStub} />,
     );
 
-    expect(await findByText(`Hi, ${USER.firstName} ${USER.lastName}!`)).toBeTruthy();
+    expect(
+      await findByText(`Hi, ${USER.firstName} ${USER.lastName}!`),
+    ).toBeTruthy();
     expect(getByText('Logout')).toBeTruthy();
   });
 
@@ -73,7 +78,9 @@ describe('ProfileScreen', () => {
     const logoutButton = await findByText('Logout');
     fireEvent.press(logoutButton);
 
-    await waitFor(() => expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled(),
+    );
   });
 
   it('clears the secure token when the back arrow is pressed', async () => {
@@ -84,7 +91,9 @@ describe('ProfileScreen', () => {
     const backArrow = await findByTestId('back-arrow');
     fireEvent.press(backArrow);
 
-    await waitFor(() => expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled(),
+    );
   });
 
   it('renders the error UI with a Retry button when the profile query errors', async () => {
@@ -107,7 +116,9 @@ describe('ProfileScreen', () => {
     const retry = await findByText('Retry');
     fireEvent.press(retry);
 
-    expect(await findByText(`Hi, ${USER.firstName} ${USER.lastName}!`)).toBeTruthy();
+    expect(
+      await findByText(`Hi, ${USER.firstName} ${USER.lastName}!`),
+    ).toBeTruthy();
     (console.error as jest.Mock).mockRestore();
   });
 });

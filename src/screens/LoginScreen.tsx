@@ -1,13 +1,17 @@
-import React from 'react';
-
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Keyboard, StyleSheet, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import React from 'react';
+import {
+  Keyboard,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 
 import { LoginForm } from '@/components/auth/LoginForm';
 import { Routes } from '@/constants/routes';
 import { useLogin } from '@/hooks';
 import { AuthStackParamList } from '@/navigation/RootNavigator';
-
 import { Spacing } from '@/theme/spacing';
 
 type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;

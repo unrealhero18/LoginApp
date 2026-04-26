@@ -1,0 +1,774 @@
+diff --git a/.eslintrc.js b/.eslintrc.js
+index a247cf8..b80bc85 100644
+--- a/.eslintrc.js
++++ b/.eslintrc.js
+@@ -21,6 +21,11 @@ module.exports = {
+             group: 'external',
+             position: 'before',
+           },
++          {
++            pattern: 'react-native*',
++            group: 'external',
++            position: 'before',
++          },
+           {
+             pattern: '@/assets/**',
+             group: 'internal',
+@@ -32,8 +37,8 @@ module.exports = {
+             position: 'after',
+           },
+         ],
+-        pathGroupsExcludedImportTypes: ['react'],
+-        'newlines-between': 'always',
++        pathGroupsExcludedImportTypes: ['react', 'react-native*'],
++        'newlines-between': 'never',
+         alphabetize: {
+           order: 'asc',
+           caseInsensitive: true,
+diff --git a/App.tsx b/App.tsx
+index 4a5c94a..32a1d7b 100644
+--- a/App.tsx
++++ b/App.tsx
+@@ -1,14 +1,12 @@
+ import React from 'react';
+-
++import { StatusBar, useColorScheme } from 'react-native';
++import { SafeAreaProvider } from 'react-native-safe-area-context';
+ import {
+   NavigationContainer,
+   DefaultTheme,
+   DarkTheme,
+ } from '@react-navigation/native';
+ import { QueryClientProvider } from '@tanstack/react-query';
+-import { StatusBar, useColorScheme } from 'react-native';
+-import { SafeAreaProvider } from 'react-native-safe-area-context';
+-
+ import RootNavigator from '@/navigation/RootNavigator';
+ import { AuthProvider } from '@/providers/AuthProvider';
+ import { queryClient } from '@/providers/queryClient';
+diff --git a/src/components/auth/LoginForm.tsx b/src/components/auth/LoginForm.tsx
+index 84ad9bd..f961c18 100644
+--- a/src/components/auth/LoginForm.tsx
++++ b/src/components/auth/LoginForm.tsx
+@@ -1,18 +1,13 @@
+ import React from 'react';
+-
+ import { StyleSheet, View } from 'react-native';
+-
+ import { PrimaryButton } from '@/components/common/Button';
+ import { ErrorMessage } from '@/components/common/ErrorMessage';
+ import { Input } from '@/components/common/Input';
++import { AuthMessages } from '@/constants/messages';
+ import { useForm } from '@/hooks';
+ import { getLoginErrorMessage } from '@/utils/error';
+-
+ import { validateLogin } from '@/utils/validation';
+-
+-import { AuthMessages, ErrorMessages } from '@/constants/messages';
+ import { Spacing } from '@/theme/spacing';
+-
+ import type { LoginPayload } from '@/types/auth';
+ 
+ type LoginFormProps = {
+diff --git a/src/components/auth/__tests__/LoginForm.test.tsx b/src/components/auth/__tests__/LoginForm.test.tsx
+index 3b3489e..5df4e04 100644
+--- a/src/components/auth/__tests__/LoginForm.test.tsx
++++ b/src/components/auth/__tests__/LoginForm.test.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import { act, fireEvent, render } from '@testing-library/react-native';
+-
+ import { LoginForm } from '@/components/auth/LoginForm';
+ import { ErrorMessages } from '@/constants/messages';
+ import { ApiError } from '@/services/api/client';
+diff --git a/src/components/common/AppText.tsx b/src/components/common/AppText.tsx
+index 12426c5..cf8b97f 100644
+--- a/src/components/common/AppText.tsx
++++ b/src/components/common/AppText.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import { StyleSheet, Text, TextProps } from 'react-native';
+-
+ import { Fonts } from '@/theme/fonts';
+ 
+ export interface AppTextProps extends TextProps {
+diff --git a/src/components/common/Button/ButtonBase.tsx b/src/components/common/Button/ButtonBase.tsx
+index 45c589c..0fbe6c4 100644
+--- a/src/components/common/Button/ButtonBase.tsx
++++ b/src/components/common/Button/ButtonBase.tsx
+@@ -1,9 +1,7 @@
+ import React from 'react';
+-
+ import { Pressable, StyleSheet, ViewStyle } from 'react-native';
+-
+-import { Spacing } from '@/theme/spacing';
+ import { cn } from '@/utils/styles';
++import { Spacing } from '@/theme/spacing';
+ 
+ type Props = {
+   children: React.ReactNode;
+diff --git a/src/components/common/Button/PrimaryButton.tsx b/src/components/common/Button/PrimaryButton.tsx
+index 2c36d2e..5900bf2 100644
+--- a/src/components/common/Button/PrimaryButton.tsx
++++ b/src/components/common/Button/PrimaryButton.tsx
+@@ -1,11 +1,8 @@
+ import React from 'react';
+-
+ import { ActivityIndicator, StyleSheet } from 'react-native';
+ import LinearGradient from 'react-native-linear-gradient';
+-
+ import { AppText } from '@/components/common/AppText';
+ import { ButtonBase } from '@/components/common/Button/ButtonBase';
+-
+ import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ import { Typography } from '@/theme/typography';
+diff --git a/src/components/common/Button/SecondaryButton.tsx b/src/components/common/Button/SecondaryButton.tsx
+index 1fec710..3c6c272 100644
+--- a/src/components/common/Button/SecondaryButton.tsx
++++ b/src/components/common/Button/SecondaryButton.tsx
+@@ -1,10 +1,7 @@
+ import React from 'react';
+-
+ import { StyleSheet } from 'react-native';
+-
+ import { AppText } from '@/components/common/AppText';
+ import { ButtonBase } from '@/components/common/Button/ButtonBase';
+-
+ import { Colors } from '@/theme/colors';
+ import { Typography } from '@/theme/typography';
+ 
+diff --git a/src/components/common/Button/__tests__/ButtonBase.test.tsx b/src/components/common/Button/__tests__/ButtonBase.test.tsx
+index fbb9292..4a2bbf8 100644
+--- a/src/components/common/Button/__tests__/ButtonBase.test.tsx
++++ b/src/components/common/Button/__tests__/ButtonBase.test.tsx
+@@ -1,6 +1,5 @@
+ import { View } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
+-
+ import { ButtonBase } from '../ButtonBase';
+ 
+ describe('ButtonBase', () => {
+diff --git a/src/components/common/Button/__tests__/PrimaryButton.test.tsx b/src/components/common/Button/__tests__/PrimaryButton.test.tsx
+index a0c0173..afa13b7 100644
+--- a/src/components/common/Button/__tests__/PrimaryButton.test.tsx
++++ b/src/components/common/Button/__tests__/PrimaryButton.test.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import ReactTestRenderer from 'react-test-renderer';
+-
+ import { ButtonBase } from '../ButtonBase';
+ import { PrimaryButton } from '../PrimaryButton';
+ 
+diff --git a/src/components/common/Button/__tests__/SecondaryButton.test.tsx b/src/components/common/Button/__tests__/SecondaryButton.test.tsx
+index a22df72..5fdd585 100644
+--- a/src/components/common/Button/__tests__/SecondaryButton.test.tsx
++++ b/src/components/common/Button/__tests__/SecondaryButton.test.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import ReactTestRenderer from 'react-test-renderer';
+-
+ import { ButtonBase } from '../ButtonBase';
+ import { SecondaryButton } from '../SecondaryButton';
+ 
+diff --git a/src/components/common/ErrorMessage/ErrorMessage.styles.ts b/src/components/common/ErrorMessage/ErrorMessage.styles.ts
+index 774229d..edbfc4e 100644
+--- a/src/components/common/ErrorMessage/ErrorMessage.styles.ts
++++ b/src/components/common/ErrorMessage/ErrorMessage.styles.ts
+@@ -1,5 +1,4 @@
+ import { StyleSheet } from 'react-native';
+-
+ import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ 
+diff --git a/src/components/common/ErrorMessage/ErrorMessage.tsx b/src/components/common/ErrorMessage/ErrorMessage.tsx
+index 29dfc72..d9fac6b 100644
+--- a/src/components/common/ErrorMessage/ErrorMessage.tsx
++++ b/src/components/common/ErrorMessage/ErrorMessage.tsx
+@@ -1,11 +1,7 @@
+ import React from 'react';
+-
+ import { View } from 'react-native';
+-
+ import { AppText } from '@/components/common/AppText';
+-
+ import InfoIcon from '@/assets/icons/info.svg';
+-
+ import { styles } from './ErrorMessage.styles';
+ 
+ type ErrorMessageProps = {
+diff --git a/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx b/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx
+index 10448a6..33483a0 100644
+--- a/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx
++++ b/src/components/common/ErrorMessage/__tests__/ErrorMessage.test.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import { render } from '@testing-library/react-native';
+-
+ import { ErrorMessage } from '../ErrorMessage';
+ 
+ describe('ErrorMessage', () => {
+diff --git a/src/components/common/Input/Input.styles.ts b/src/components/common/Input/Input.styles.ts
+index 4c00ba1..5d82998 100644
+--- a/src/components/common/Input/Input.styles.ts
++++ b/src/components/common/Input/Input.styles.ts
+@@ -1,5 +1,4 @@
+ import { StyleSheet } from 'react-native';
+-
+ import { Colors } from '@/theme/colors';
+ import { Fonts } from '@/theme/fonts';
+ import { Spacing } from '@/theme/spacing';
+diff --git a/src/components/common/Input/Input.tsx b/src/components/common/Input/Input.tsx
+index 93aa8d4..68c4c72 100644
+--- a/src/components/common/Input/Input.tsx
++++ b/src/components/common/Input/Input.tsx
+@@ -3,16 +3,13 @@ import React, {
+   useEffect,
+   useState,
+ } from 'react';
+-
+ import {
+   TextInput,
+   TextInputProps,
+   View,
+ } from 'react-native';
+-
+ import { logger } from '@/utils/logger';
+ import { cn } from '@/utils/styles';
+-
+ import { styles } from './Input.styles';
+ import { InputClearButton } from './InputClearButton';
+ import { InputError } from './InputError';
+diff --git a/src/components/common/Input/InputClearButton.tsx b/src/components/common/Input/InputClearButton.tsx
+index e693f69..c481f1f 100644
+--- a/src/components/common/Input/InputClearButton.tsx
++++ b/src/components/common/Input/InputClearButton.tsx
+@@ -1,9 +1,6 @@
+ import React from 'react';
+-
+ import { Pressable } from 'react-native';
+-
+ import CloseIcon from '@/assets/icons/close.svg';
+-
+ import { styles } from './Input.styles';
+ 
+ type Props = {
+diff --git a/src/components/common/Input/InputError.tsx b/src/components/common/Input/InputError.tsx
+index c052864..a78be36 100644
+--- a/src/components/common/Input/InputError.tsx
++++ b/src/components/common/Input/InputError.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import { AppText } from '@/components/common/AppText';
+-
+ import { styles } from './Input.styles';
+ 
+ type Props = {
+diff --git a/src/components/common/Input/InputLabel.tsx b/src/components/common/Input/InputLabel.tsx
+index 3e19a43..8c04c09 100644
+--- a/src/components/common/Input/InputLabel.tsx
++++ b/src/components/common/Input/InputLabel.tsx
+@@ -1,7 +1,5 @@
+ import React, { useEffect, useRef } from 'react';
+-
+ import { Animated, StyleProp, TextStyle } from 'react-native';
+-
+ import { AppText } from '@/components/common/AppText';
+ import { Spacing, Timing, Typography } from '@/theme';
+ 
+diff --git a/src/components/common/Input/__tests__/Input.test.tsx b/src/components/common/Input/__tests__/Input.test.tsx
+index 7bf7439..8a370d3 100644
+--- a/src/components/common/Input/__tests__/Input.test.tsx
++++ b/src/components/common/Input/__tests__/Input.test.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import { act, fireEvent, render, screen } from '@testing-library/react-native';
+-
+ import { Input } from '../index';
+ 
+ describe('Input', () => {
+diff --git a/src/components/common/__tests__/AppText.test.tsx b/src/components/common/__tests__/AppText.test.tsx
+index 2ce9cf2..b08c090 100644
+--- a/src/components/common/__tests__/AppText.test.tsx
++++ b/src/components/common/__tests__/AppText.test.tsx
+@@ -1,8 +1,6 @@
+ import React from 'react';
+-
+ import { Text } from 'react-native';
+ import ReactTestRenderer from 'react-test-renderer';
+-
+ import { AppText } from '../AppText';
+ 
+ describe('AppText', () => {
+diff --git a/src/hooks/__tests__/useForm.test.ts b/src/hooks/__tests__/useForm.test.ts
+index 607f26d..52f6d98 100644
+--- a/src/hooks/__tests__/useForm.test.ts
++++ b/src/hooks/__tests__/useForm.test.ts
+@@ -1,5 +1,4 @@
+ import { renderHook, act } from '@testing-library/react-native';
+-
+ import { useForm } from '../useForm';
+ 
+ describe('useForm', () => {
+diff --git a/src/hooks/__tests__/useLogin.test.tsx b/src/hooks/__tests__/useLogin.test.tsx
+index 3748fa1..381a917 100644
+--- a/src/hooks/__tests__/useLogin.test.tsx
++++ b/src/hooks/__tests__/useLogin.test.tsx
+@@ -1,13 +1,10 @@
+ import React from 'react';
+-
+ import { QueryClientProvider } from '@tanstack/react-query';
+ import { act, renderHook, waitFor } from '@testing-library/react-native';
+-
+ import { useLogin } from '@/hooks/useLogin';
+ import { AuthProvider } from '@/providers/AuthProvider';
+ import * as authService from '@/services/api/auth';
+ import { createTestQueryClient } from '@/test-utils/renderWithAuth';
+-
+ import type { AuthToken, AuthUser } from '@/types/auth';
+ 
+ jest.mock('@/services/api/auth');
+diff --git a/src/hooks/__tests__/useNetworkStatus.test.ts b/src/hooks/__tests__/useNetworkStatus.test.ts
+index 5ad66dc..f5129f6 100644
+--- a/src/hooks/__tests__/useNetworkStatus.test.ts
++++ b/src/hooks/__tests__/useNetworkStatus.test.ts
+@@ -1,6 +1,5 @@
+-import { act, renderHook, waitFor } from '@testing-library/react-native';
+ import NetInfo from '@react-native-community/netinfo';
+-
++import { act, renderHook, waitFor } from '@testing-library/react-native';
+ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+ 
+ const mockedNetInfo = jest.mocked(NetInfo);
+diff --git a/src/hooks/__tests__/useProfile.test.tsx b/src/hooks/__tests__/useProfile.test.tsx
+index 3351c66..adead4d 100644
+--- a/src/hooks/__tests__/useProfile.test.tsx
++++ b/src/hooks/__tests__/useProfile.test.tsx
+@@ -1,14 +1,11 @@
+ import React from 'react';
+-
++import * as Keychain from 'react-native-keychain';
+ import { QueryClientProvider } from '@tanstack/react-query';
+ import { act, renderHook, waitFor } from '@testing-library/react-native';
+-import * as Keychain from 'react-native-keychain';
+-
+ import { useProfile } from '@/hooks/useProfile';
+ import { AuthProvider } from '@/providers/AuthProvider';
+ import * as authService from '@/services/api/auth';
+ import { createTestQueryClient } from '@/test-utils/renderWithAuth';
+-
+ import type { AuthToken, AuthUser } from '@/types/auth';
+ 
+ jest.mock('@/services/api/auth');
+diff --git a/src/hooks/useAuth.ts b/src/hooks/useAuth.ts
+index 1ecdca9..7a300d5 100644
+--- a/src/hooks/useAuth.ts
++++ b/src/hooks/useAuth.ts
+@@ -1,5 +1,4 @@
+ import { useContext } from 'react';
+-
+ import { AuthContext, type AuthContextValue } from '@/providers/authContext';
+ 
+ export function useAuth(): AuthContextValue {
+diff --git a/src/hooks/useAuthActions.ts b/src/hooks/useAuthActions.ts
+index 725b41c..d0e415a 100644
+--- a/src/hooks/useAuthActions.ts
++++ b/src/hooks/useAuthActions.ts
+@@ -1,13 +1,10 @@
+ import { useCallback } from 'react';
+-
+ import { type QueryClient } from '@tanstack/react-query';
+-
+ import { getMe, login as loginRequest } from '@/services/api/auth';
+ import { setAuthToken } from '@/services/api/client';
+ import { clearToken, saveToken } from '@/services/storage/secureTokenStore';
+ import { LoginProfileFetchError } from '@/utils/error';
+ import { logger } from '@/utils/logger';
+-
+ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ 
+ export function useAuthActions(
+diff --git a/src/hooks/useForm.ts b/src/hooks/useForm.ts
+index 01ef433..a365e22 100644
+--- a/src/hooks/useForm.ts
++++ b/src/hooks/useForm.ts
+@@ -1,8 +1,6 @@
+ import { useState } from 'react';
+ import { Keyboard } from 'react-native';
+-
+ import { logger } from '@/utils/logger';
+-
+ import type { FormErrors } from '@/types/form';
+ 
+ type UseFormOptions<T> = {
+diff --git a/src/hooks/useHydration.ts b/src/hooks/useHydration.ts
+index 759411e..d2af84c 100644
+--- a/src/hooks/useHydration.ts
++++ b/src/hooks/useHydration.ts
+@@ -1,15 +1,12 @@
+ import { useCallback, useEffect } from 'react';
+-
+-import NetInfo from '@react-native-community/netinfo';
+ import { Alert } from 'react-native';
+-
++import NetInfo from '@react-native-community/netinfo';
+ import { ErrorMessages } from '@/constants/messages';
+ import { getMe } from '@/services/api/auth';
+ import { ApiError, setAuthToken } from '@/services/api/client';
+ import { clearToken, loadToken } from '@/services/storage/secureTokenStore';
+ import { isTokenExpired } from '@/utils/jwt';
+ import { logger } from '@/utils/logger';
+-
+ import type { AuthToken, AuthUser } from '@/types/auth';
+ 
+ export function useHydration(
+diff --git a/src/hooks/useLogin.ts b/src/hooks/useLogin.ts
+index 164af33..2081a9f 100644
+--- a/src/hooks/useLogin.ts
++++ b/src/hooks/useLogin.ts
+@@ -1,7 +1,5 @@
+ import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+-
+ import { useAuth } from '@/hooks/useAuth';
+-
+ import type { LoginPayload } from '@/types/auth';
+ 
+ export function useLogin(): UseMutationResult<void, Error, LoginPayload> {
+diff --git a/src/hooks/useNetworkStatus.ts b/src/hooks/useNetworkStatus.ts
+index f5f92b8..3fb9051 100644
+--- a/src/hooks/useNetworkStatus.ts
++++ b/src/hooks/useNetworkStatus.ts
+@@ -1,7 +1,5 @@
+ import { useEffect, useState } from 'react';
+-
+ import NetInfo from '@react-native-community/netinfo';
+-
+ import { logger } from '@/utils/logger';
+ 
+ export function useNetworkStatus(): { isConnected: boolean | null } {
+diff --git a/src/hooks/useProfile.ts b/src/hooks/useProfile.ts
+index 162d32c..d957486 100644
+--- a/src/hooks/useProfile.ts
++++ b/src/hooks/useProfile.ts
+@@ -1,8 +1,6 @@
+ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+-
+ import { useAuth } from '@/hooks/useAuth';
+ import { getMe } from '@/services/api/auth';
+-
+ import type { AuthUser } from '@/types/auth';
+ 
+ export function useProfile(): UseQueryResult<AuthUser, Error> {
+diff --git a/src/hooks/useTokenExpiry.ts b/src/hooks/useTokenExpiry.ts
+index 561ccef..339f989 100644
+--- a/src/hooks/useTokenExpiry.ts
++++ b/src/hooks/useTokenExpiry.ts
+@@ -1,11 +1,8 @@
+ import { type RefObject, useEffect } from 'react';
+-
+ import { Alert, AppState } from 'react-native';
+-
+ import { ErrorMessages } from '@/constants/messages';
+ import { getTokenExpiryMs, isTokenExpired } from '@/utils/jwt';
+ import { logger } from '@/utils/logger';
+-
+ import type { AuthToken } from '@/types/auth';
+ 
+ export function useTokenExpiry(
+diff --git a/src/hooks/useUnauthorizedHandler.ts b/src/hooks/useUnauthorizedHandler.ts
+index 3cf8e50..0a4a925 100644
+--- a/src/hooks/useUnauthorizedHandler.ts
++++ b/src/hooks/useUnauthorizedHandler.ts
+@@ -1,5 +1,4 @@
+ import { useEffect } from 'react';
+-
+ import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
+ import { setOnUnauthorized } from '@/services/api/client';
+ 
+diff --git a/src/navigation/RootNavigator.tsx b/src/navigation/RootNavigator.tsx
+index b1e5f9e..889d18d 100644
+--- a/src/navigation/RootNavigator.tsx
++++ b/src/navigation/RootNavigator.tsx
+@@ -1,15 +1,12 @@
+ import React from 'react';
+-
+-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+ import { ActivityIndicator, StyleSheet, View } from 'react-native';
+-
++import { createNativeStackNavigator } from '@react-navigation/native-stack';
+ import { Routes } from '@/constants/routes';
+ import { useAuth } from '@/hooks';
+ import HomeScreen from '@/screens/HomeScreen';
+ import LoginScreen from '@/screens/LoginScreen';
+ import OfflineScreen from '@/screens/OfflineScreen';
+ import ProfileScreen from '@/screens/ProfileScreen';
+-
+ import { Colors } from '@/theme/colors';
+ 
+ export type AuthStackParamList = {
+diff --git a/src/providers/AuthProvider.tsx b/src/providers/AuthProvider.tsx
+index de80810..22f1f02 100644
+--- a/src/providers/AuthProvider.tsx
++++ b/src/providers/AuthProvider.tsx
+@@ -1,13 +1,10 @@
+ import React, { useMemo, useRef, useState } from 'react';
+-
+ import { useQueryClient } from '@tanstack/react-query';
+-
+ import { useAuthActions } from '@/hooks/useAuthActions';
+ import { useHydration } from '@/hooks/useHydration';
+ import { useTokenExpiry } from '@/hooks/useTokenExpiry';
+ import { useUnauthorizedHandler } from '@/hooks/useUnauthorizedHandler';
+ import { AuthContext, type AuthContextValue } from '@/providers/authContext';
+-
+ import type { AuthToken, AuthUser } from '@/types/auth';
+ 
+ export type { AuthContextValue } from '@/providers/authContext';
+diff --git a/src/providers/__tests__/AuthProvider.test.tsx b/src/providers/__tests__/AuthProvider.test.tsx
+index 3cd8b19..88091df 100644
+--- a/src/providers/__tests__/AuthProvider.test.tsx
++++ b/src/providers/__tests__/AuthProvider.test.tsx
+@@ -1,10 +1,8 @@
+ import React from 'react';
+-
+-import { QueryClientProvider } from '@tanstack/react-query';
+-import { act, renderHook, waitFor } from '@testing-library/react-native';
+ import { AppState, Alert } from 'react-native';
+ import * as Keychain from 'react-native-keychain';
+-
++import { QueryClientProvider } from '@tanstack/react-query';
++import { act, renderHook, waitFor } from '@testing-library/react-native';
+ import { useAuth } from '@/hooks/useAuth';
+ import { AuthProvider } from '@/providers/AuthProvider';
+ import * as authService from '@/services/api/auth';
+@@ -12,7 +10,6 @@ import * as client from '@/services/api/client';
+ import { ApiError } from '@/services/api/client';
+ import { createTestQueryClient } from '@/test-utils/renderWithAuth';
+ import { getTokenExpiryMs, isTokenExpired } from '@/utils/jwt';
+-
+ import type { AuthToken, AuthUser } from '@/types/auth';
+ 
+ jest.mock('@react-native-community/netinfo', () => ({
+diff --git a/src/providers/authContext.ts b/src/providers/authContext.ts
+index 72d731b..9ac8d3c 100644
+--- a/src/providers/authContext.ts
++++ b/src/providers/authContext.ts
+@@ -1,5 +1,4 @@
+ import { createContext } from 'react';
+-
+ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ 
+ export type AuthContextValue = {
+diff --git a/src/providers/queryClient.ts b/src/providers/queryClient.ts
+index 0199347..07718b3 100644
+--- a/src/providers/queryClient.ts
++++ b/src/providers/queryClient.ts
+@@ -1,5 +1,4 @@
+ import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+-
+ import { IS_TEST } from '@/constants/env';
+ import { ApiError } from '@/services/api/client';
+ 
+diff --git a/src/screens/HomeScreen.tsx b/src/screens/HomeScreen.tsx
+index 453b1b7..f5e4219 100644
+--- a/src/screens/HomeScreen.tsx
++++ b/src/screens/HomeScreen.tsx
+@@ -1,13 +1,10 @@
+ import React from 'react';
+-
+-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { StyleSheet, View } from 'react-native';
+-
++import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { PrimaryButton } from '@/components/common/Button';
+ import { AuthMessages } from '@/constants/messages';
+ import { Routes } from '@/constants/routes';
+ import { AuthStackParamList } from '@/navigation/RootNavigator';
+-
+ import { Spacing } from '@/theme/spacing';
+ 
+ type Props = NativeStackScreenProps<AuthStackParamList, Routes.HOME>;
+diff --git a/src/screens/LoginScreen.tsx b/src/screens/LoginScreen.tsx
+index 5a92456..8021b00 100644
+--- a/src/screens/LoginScreen.tsx
++++ b/src/screens/LoginScreen.tsx
+@@ -1,13 +1,10 @@
+ import React from 'react';
+-
+-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { Keyboard, StyleSheet, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+-
++import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { LoginForm } from '@/components/auth/LoginForm';
+ import { Routes } from '@/constants/routes';
+ import { useLogin } from '@/hooks';
+ import { AuthStackParamList } from '@/navigation/RootNavigator';
+-
+ import { Spacing } from '@/theme/spacing';
+ 
+ type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;
+diff --git a/src/screens/OfflineScreen.tsx b/src/screens/OfflineScreen.tsx
+index 6dbc188..1322524 100644
+--- a/src/screens/OfflineScreen.tsx
++++ b/src/screens/OfflineScreen.tsx
+@@ -1,12 +1,9 @@
+ import React from 'react';
+-
+ import { StyleSheet, View } from 'react-native';
+-
+ import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton } from '@/components/common/Button';
+ import { OfflineMessages } from '@/constants/messages';
+ import { useAuth } from '@/hooks';
+-
+ import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ 
+diff --git a/src/screens/ProfileScreen.tsx b/src/screens/ProfileScreen.tsx
+index 99116d8..49fa422 100644
+--- a/src/screens/ProfileScreen.tsx
++++ b/src/screens/ProfileScreen.tsx
+@@ -1,11 +1,7 @@
+ import React, { useMemo } from 'react';
+-
+-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+-
+-import BackIcon from '@/assets/icons/back.svg';
+-
++import { NativeStackScreenProps } from '@react-navigation/native-stack';
+ import { AppText } from '@/components/common/AppText';
+ import { PrimaryButton, SecondaryButton } from '@/components/common/Button';
+ import { ErrorMessage } from '@/components/common/ErrorMessage';
+@@ -13,7 +9,7 @@ import { ErrorMessages, AuthMessages } from '@/constants/messages';
+ import { Routes } from '@/constants/routes';
+ import { useAuth, useProfile } from '@/hooks';
+ import { AppStackParamList } from '@/navigation/RootNavigator';
+-
++import BackIcon from '@/assets/icons/back.svg';
+ import { Colors } from '@/theme/colors';
+ import { Spacing } from '@/theme/spacing';
+ import { Typography } from '@/theme/typography';
+diff --git a/src/screens/__tests__/LoginScreen.test.tsx b/src/screens/__tests__/LoginScreen.test.tsx
+index 4cfd100..cbd9a15 100644
+--- a/src/screens/__tests__/LoginScreen.test.tsx
++++ b/src/screens/__tests__/LoginScreen.test.tsx
+@@ -1,7 +1,5 @@
+ import React from 'react';
+-
+ import { fireEvent, waitFor } from '@testing-library/react-native';
+-
+ import LoginScreen from '@/screens/LoginScreen';
+ import * as authService from '@/services/api/auth';
+ import { ApiError } from '@/services/api/client';
+diff --git a/src/screens/__tests__/OfflineScreen.test.tsx b/src/screens/__tests__/OfflineScreen.test.tsx
+index c0eba94..c901433 100644
+--- a/src/screens/__tests__/OfflineScreen.test.tsx
++++ b/src/screens/__tests__/OfflineScreen.test.tsx
+@@ -1,10 +1,7 @@
+ import React from 'react';
+-
+ import { fireEvent, render } from '@testing-library/react-native';
+-
+ import { useAuth } from '@/hooks/useAuth';
+ import OfflineScreen from '@/screens/OfflineScreen';
+-
+ import type { AuthContextValue } from '@/providers/AuthProvider';
+ 
+ jest.mock('@react-native-community/netinfo', () => ({
+diff --git a/src/screens/__tests__/ProfileScreen.test.tsx b/src/screens/__tests__/ProfileScreen.test.tsx
+index 7cf8b3e..8e7c31d 100644
+--- a/src/screens/__tests__/ProfileScreen.test.tsx
++++ b/src/screens/__tests__/ProfileScreen.test.tsx
+@@ -1,12 +1,9 @@
+ import React from 'react';
+-
+-import { fireEvent, waitFor } from '@testing-library/react-native';
+ import * as Keychain from 'react-native-keychain';
+-
++import { fireEvent, waitFor } from '@testing-library/react-native';
+ import ProfileScreen from '@/screens/ProfileScreen';
+ import * as authService from '@/services/api/auth';
+ import { renderWithAuth } from '@/test-utils/renderWithAuth';
+-
+ import type { AuthToken, AuthUser } from '@/types/auth';
+ 
+ jest.mock('@/services/api/auth');
+diff --git a/src/services/api/auth.ts b/src/services/api/auth.ts
+index 261c61b..dee9c94 100644
+--- a/src/services/api/auth.ts
++++ b/src/services/api/auth.ts
+@@ -1,6 +1,5 @@
+ import { TOKEN_EXPIRES_IN_MINS } from '@/constants/auth';
+ import { apiFetch } from '@/services/api/client';
+-
+ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+ 
+ /**
+diff --git a/src/services/storage/secureTokenStore.ts b/src/services/storage/secureTokenStore.ts
+index b096eba..8a602d2 100644
+--- a/src/services/storage/secureTokenStore.ts
++++ b/src/services/storage/secureTokenStore.ts
+@@ -1,7 +1,5 @@
+ import * as Keychain from 'react-native-keychain';
+-
+ import { logger } from '@/utils/logger';
+-
+ import type { AuthToken } from '@/types/auth';
+ 
+ const SERVICE = 'loginapp.auth';
+diff --git a/src/test-utils/renderWithAuth.tsx b/src/test-utils/renderWithAuth.tsx
+index fe34969..633d398 100644
+--- a/src/test-utils/renderWithAuth.tsx
++++ b/src/test-utils/renderWithAuth.tsx
+@@ -1,8 +1,6 @@
+ import React from 'react';
+-
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import { render, type RenderOptions, type RenderAPI } from '@testing-library/react-native';
+-
+ import { AuthProvider } from '@/providers/AuthProvider';
+ import { queryClient } from '@/providers/queryClient';
+ 
+diff --git a/src/types/svg.d.ts b/src/types/svg.d.ts
+index e3cae26..0026951 100644
+--- a/src/types/svg.d.ts
++++ b/src/types/svg.d.ts
+@@ -1,6 +1,5 @@
+ declare module '*.svg' {
+   import React from 'react';
+-
+   import { SvgProps } from 'react-native-svg';
+ 
+   const content: React.FC<SvgProps>;
+diff --git a/src/utils/__tests__/jwt.test.ts b/src/utils/__tests__/jwt.test.ts
+index f27a4ae..75f4770 100644
+--- a/src/utils/__tests__/jwt.test.ts
++++ b/src/utils/__tests__/jwt.test.ts
+@@ -6,7 +6,7 @@ const b64url = (data: string) =>
+   btoa(data)
+     .replace(/\+/g, '-')
+     .replace(/\//g, '_')
+-    .replace(/=/g, '');
++    .replace(/[=]/g, '');
+ 
+ const HEADER = b64url('{"alg":"HS256","typ":"JWT"}');
+ 
+diff --git a/src/utils/jwt.ts b/src/utils/jwt.ts
+index 9342217..573f970 100644
+--- a/src/utils/jwt.ts
++++ b/src/utils/jwt.ts
+@@ -1,5 +1,4 @@
+ import { jwtDecode } from 'jwt-decode';
+-
+ import { logger } from '@/utils/logger';
+ 
+ type JwtPayload = {

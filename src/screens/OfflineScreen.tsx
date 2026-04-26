@@ -1,12 +1,10 @@
 import React from 'react';
-
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
 import { OfflineMessages } from '@/constants/messages';
 import { useAuth } from '@/hooks';
-
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
 
@@ -24,7 +22,10 @@ export default function OfflineScreen() {
       </AppText>
       <AppText style={styles.message}>{message}</AppText>
       <View style={styles.actions}>
-        <PrimaryButton title={OfflineMessages.RECONNECT_BUTTON} onPress={retryHydration} />
+        <PrimaryButton
+          title={OfflineMessages.RECONNECT_BUTTON}
+          onPress={retryHydration}
+        />
       </View>
     </View>
   );

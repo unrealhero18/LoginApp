@@ -1,7 +1,10 @@
-import React from 'react';
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, type RenderOptions, type RenderAPI } from '@testing-library/react-native';
+import {
+  render,
+  type RenderOptions,
+  type RenderAPI,
+} from '@testing-library/react-native';
+import React from 'react';
 
 import { AuthProvider } from '@/providers/AuthProvider';
 import { queryClient } from '@/providers/queryClient';
@@ -17,7 +20,10 @@ type WrapperOptions = {
 
 export function renderWithAuth(
   ui: React.ReactElement,
-  { queryClient: customQueryClient, ...renderOptions }: WrapperOptions & Omit<RenderOptions, 'wrapper'> = {},
+  {
+    queryClient: customQueryClient,
+    ...renderOptions
+  }: WrapperOptions & Omit<RenderOptions, 'wrapper'> = {},
 ): RenderAPI & { queryClient: QueryClient } {
   const client = customQueryClient ?? createTestQueryClient();
 

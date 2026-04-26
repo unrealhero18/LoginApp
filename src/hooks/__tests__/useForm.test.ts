@@ -11,17 +11,13 @@ describe('useForm', () => {
   });
 
   it('should initialize with initial values', () => {
-    const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit })
-    );
+    const { result } = renderHook(() => useForm({ initialValues, onSubmit }));
 
     expect(result.current.values).toEqual(initialValues);
   });
 
   it('should update values when handleChange is called', () => {
-    const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit })
-    );
+    const { result } = renderHook(() => useForm({ initialValues, onSubmit }));
 
     act(() => {
       result.current.handleChange('username')('testuser');
@@ -31,9 +27,7 @@ describe('useForm', () => {
   });
 
   it('should call onSubmit with current values when handleSubmit is called', () => {
-    const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit })
-    );
+    const { result } = renderHook(() => useForm({ initialValues, onSubmit }));
 
     act(() => {
       result.current.handleChange('username')('testuser');
@@ -53,7 +47,7 @@ describe('useForm', () => {
   it('should call onValueChange when a field value changes', () => {
     const onValueChange = jest.fn();
     const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit, onValueChange })
+      useForm({ initialValues, onSubmit, onValueChange }),
     );
 
     act(() => {
@@ -130,15 +124,13 @@ describe('useForm', () => {
       }),
     );
 
-    // If we use Boolean(), these would be false. 
+    // If we use Boolean(), these would be false.
     // They should be true (complete) for numeric/boolean fields.
     expect(result.current.isComplete).toBe(true);
   });
 
   it('should maintain errors reference if the field being changed has no error', () => {
-    const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit })
-    );
+    const { result } = renderHook(() => useForm({ initialValues, onSubmit }));
 
     const initialErrors = result.current.errors;
 
@@ -151,9 +143,7 @@ describe('useForm', () => {
   });
 
   it('should reset values and errors when reset is called', () => {
-    const { result } = renderHook(() =>
-      useForm({ initialValues, onSubmit })
-    );
+    const { result } = renderHook(() => useForm({ initialValues, onSubmit }));
 
     act(() => {
       result.current.handleChange('username')('newuser');

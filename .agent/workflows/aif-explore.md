@@ -11,10 +11,12 @@ Enter explore mode. Think deeply. Visualize freely. Follow the conversation wher
 ## Step 0: Load Config
 
 **FIRST:** Read `.ai-factory/config.yaml` if it exists to resolve:
+
 - **Paths:** `paths.description`, `paths.architecture`, `paths.rules_file`, `paths.roadmap`, `paths.research`, `paths.plan`, `paths.plans`, and `paths.rules`
 - **Language:** `language.ui` for communication
 
 If config.yaml doesn't exist, use defaults:
+
 - Paths: `.ai-factory/` for all artifacts
 - Language: `en` (English)
 
@@ -46,24 +48,28 @@ If config.yaml doesn't exist, use defaults:
 Depending on what the user brings, you might:
 
 **Explore the problem space**
+
 - Ask clarifying questions that emerge from what they said
 - Challenge assumptions
 - Reframe the problem
 - Find analogies
 
 **Investigate the codebase**
+
 - Map existing architecture relevant to the discussion
 - Find integration points
 - Identify patterns already in use
 - Surface hidden complexity
 
 **Compare options**
+
 - Brainstorm multiple approaches
 - Build comparison tables
 - Sketch tradeoffs
 - Recommend a path (if asked)
 
 **Visualize**
+
 ```
 +-----------------------------------------+
 |     Use ASCII diagrams liberally        |
@@ -82,6 +88,7 @@ Depending on what the user brings, you might:
 ```
 
 **Surface risks and unknowns**
+
 - Identify what could go wrong
 - Find gaps in understanding
 - Suggest spikes or investigations
@@ -98,6 +105,7 @@ This file contains project-specific rules accumulated by `/aif-evolve` from patc
 codebase conventions, and tech-stack analysis. These rules are tailored to the current project.
 
 **How to apply skill-context rules:**
+
 - Treat them as **project-level overrides** for this skill's general instructions
 - When a skill-context rule conflicts with a general rule written in this SKILL.md,
   **the skill-context rule wins** (more specific context takes priority — same principle as nested CLAUDE.md files)
@@ -125,6 +133,7 @@ At the start, read these files if present:
 - the resolved ROADMAP.md path – strategic milestones (if any)
 
 This tells you:
+
 - What the project is about
 - What conventions to follow
 - If there's active work in progress
@@ -133,6 +142,7 @@ This tells you:
 ### Input handling
 
 The argument after `/aif-explore` can be:
+
 - A vague idea: "real-time collaboration"
 - A specific problem: "the auth system is getting unwieldy"
 - A plan name: to explore in context of `.ai-factory/plans/<name>.md`
@@ -151,10 +161,12 @@ Think freely. When insights crystallize, you might offer:
 If the user mentions a plan or you detect one is relevant:
 
 1. **Read existing plan for context**
+
    - the resolved fast plan path (fast mode)
    - `<configured plans dir>/<branch>.md` (full mode)
 
 2. **Reference it naturally in conversation**
+
    - "Your plan mentions adding Redis, but we just realized SQLite fits better..."
    - "Task 3 scopes this to premium users, but we're now thinking everyone..."
 
@@ -163,17 +175,18 @@ If the user mentions a plan or you detect one is relevant:
    Default in explore mode: capture everything in the resolved research path so it survives `/clear`.
    Later (during planning), you can migrate stabilized decisions into the appropriate context file.
 
-   | Insight Type | Capture Now (Explore) | Later (Optional) |
-   |--------------|------------------------|------------------|
-   | New requirement | `paths.research` | `paths.description` |
-   | Architecture decision | `paths.research` | `paths.architecture` |
-   | Project convention | `paths.research` | `paths.rules_file` |
-   | Strategic direction | `paths.research` | `paths.roadmap` |
-   | Assumption invalidated | `paths.research` | Relevant file |
-   | Exploration context (persisted) | `paths.research` | (keep in research) |
-   | New task/feature | Run `/aif-plan` | `paths.plan` or `paths.plans/<branch-or-slug>.md` |
+   | Insight Type                    | Capture Now (Explore) | Later (Optional)                                  |
+   | ------------------------------- | --------------------- | ------------------------------------------------- |
+   | New requirement                 | `paths.research`      | `paths.description`                               |
+   | Architecture decision           | `paths.research`      | `paths.architecture`                              |
+   | Project convention              | `paths.research`      | `paths.rules_file`                                |
+   | Strategic direction             | `paths.research`      | `paths.roadmap`                                   |
+   | Assumption invalidated          | `paths.research`      | Relevant file                                     |
+   | Exploration context (persisted) | `paths.research`      | (keep in research)                                |
+   | New task/feature                | Run `/aif-plan`       | `paths.plan` or `paths.plans/<branch-or-slug>.md` |
 
    Example offers:
+
    - "Want me to save this to the resolved research path so you can `/clear` and come back later?"
    - "That's an architecture decision — save it to RESEARCH now and we can migrate it to ARCHITECTURE during planning."
 
@@ -197,6 +210,7 @@ Options:
 ```
 
 If user selects (1) or (2):
+
 - Ensure the parent directory of the resolved research path exists (`mkdir -p "$(dirname "<resolved research path>")"`)
 - If the resolved research path does not exist, create it with this skeleton:
 
@@ -207,7 +221,9 @@ Updated: YYYY-MM-DD HH:MM
 Status: active
 
 ## Active Summary (input for /aif-plan)
+
 <!-- aif:active-summary:start -->
+
 Topic:
 Goal:
 Constraints:
@@ -215,9 +231,11 @@ Decisions:
 Open questions:
 Success signals:
 Next step:
+
 <!-- aif:active-summary:end -->
 
 ## Sessions
+
 <!-- aif:sessions:start -->
 <!-- aif:sessions:end -->
 ```
@@ -228,6 +246,7 @@ Next step:
 
 ```markdown
 ### YYYY-MM-DD HH:MM — <short title>
+
 What changed:
 Key notes:
 Links (paths):
@@ -251,6 +270,7 @@ Keep prior sessions verbatim (do not rewrite history).
 ## Handling Different Entry Points
 
 **User brings a vague idea:**
+
 ```
 User: I'm thinking about adding real-time collaboration
 
@@ -273,6 +293,7 @@ You: Real-time collab is a big space. Let me think about this...
 ```
 
 **User brings a specific problem:**
+
 ```
 User: The auth system is a mess
 
@@ -304,6 +325,7 @@ You: [reads codebase]
 ```
 
 **User is stuck mid-implementation:**
+
 ```
 User: /aif-explore add-auth-system
       The OAuth integration is more complex than expected
@@ -321,6 +343,7 @@ You: [reads plan from .ai-factory/plans/add-auth-system.md]
 ```
 
 **User wants to compare options:**
+
 ```
 User: Should we use Postgres or SQLite?
 

@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Pressable } from 'react-native';
 
 import CloseIcon from '@/assets/icons/close.svg';
@@ -12,7 +11,11 @@ type Props = {
   testID?: string;
 };
 
-export const InputClearButton: React.FC<Props> = ({ onClear, label, testID }) => {
+export const InputClearButton: React.FC<Props> = ({
+  onClear,
+  label,
+  testID,
+}) => {
   return (
     <Pressable
       onPress={onClear}

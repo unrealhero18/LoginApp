@@ -1,13 +1,11 @@
-import React from 'react';
-
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/common/Button';
 import { AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { AuthStackParamList } from '@/navigation/RootNavigator';
-
 import { Spacing } from '@/theme/spacing';
 
 type Props = NativeStackScreenProps<AuthStackParamList, Routes.HOME>;

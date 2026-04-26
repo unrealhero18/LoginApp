@@ -3,10 +3,7 @@ jest.unmock('@/utils/jwt');
 import { getTokenExpiryMs, isTokenExpired } from '../jwt';
 
 const b64url = (data: string) =>
-  btoa(data)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  btoa(data).replace(/\+/g, '-').replace(/\//g, '_').replace(/[=]/g, '');
 
 const HEADER = b64url('{"alg":"HS256","typ":"JWT"}');
 

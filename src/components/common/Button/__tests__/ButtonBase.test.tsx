@@ -9,7 +9,7 @@ describe('ButtonBase', () => {
       ReactTestRenderer.create(
         <ButtonBase>
           <View />
-        </ButtonBase>
+        </ButtonBase>,
       );
     });
   });
@@ -20,7 +20,7 @@ describe('ButtonBase', () => {
       component = ReactTestRenderer.create(
         <ButtonBase>
           <View testID="child" />
-        </ButtonBase>
+        </ButtonBase>,
       );
     });
     const root = component!.root;
@@ -34,7 +34,7 @@ describe('ButtonBase', () => {
       component = ReactTestRenderer.create(
         <ButtonBase onPress={onPressMock}>
           <View />
-        </ButtonBase>
+        </ButtonBase>,
       );
     });
     const root = component!.root;
@@ -49,7 +49,7 @@ describe('ButtonBase', () => {
       component = ReactTestRenderer.create(
         <ButtonBase disabled={true}>
           <View />
-        </ButtonBase>
+        </ButtonBase>,
       );
     });
     const root = component!.root;

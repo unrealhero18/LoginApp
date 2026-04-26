@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
-
 import { type QueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
 import { getMe, login as loginRequest } from '@/services/api/auth';
 import { setAuthToken } from '@/services/api/client';
@@ -47,7 +46,10 @@ export function useAuthActions(
       try {
         await saveToken(nextToken);
       } catch (error) {
-        logger.error('[AuthProvider] failed to persist token after login', error);
+        logger.error(
+          '[AuthProvider] failed to persist token after login',
+          error,
+        );
       }
 
       try {
@@ -55,14 +57,20 @@ export function useAuthActions(
         setToken(nextToken);
         setUser(profile);
       } catch (error) {
-        logger.error('[AuthProvider] profile fetch failed after login; clearing token', error);
+        logger.error(
+          '[AuthProvider] profile fetch failed after login; clearing token',
+          error,
+        );
         setAuthToken(null);
         // Wrap clearToken in its own try/catch so a Keychain failure here
         // never masks the original profile-fetch error.
         try {
           await clearToken();
         } catch (clearError) {
-          logger.error('[AuthProvider] failed to clear token after profile fetch failure', clearError);
+          logger.error(
+            '[AuthProvider] failed to clear token after profile fetch failure',
+            clearError,
+          );
         }
         throw new LoginProfileFetchError(error);
       }

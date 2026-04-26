@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { act, fireEvent, render } from '@testing-library/react-native';
+import React from 'react';
 
 import { LoginForm } from '@/components/auth/LoginForm';
 import { ErrorMessages } from '@/constants/messages';
@@ -72,7 +71,6 @@ describe('LoginForm', () => {
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
-
   it('shows specific validation error for short username', () => {
     const { getByLabelText, getByText } = render(
       <LoginForm
@@ -95,7 +93,6 @@ describe('LoginForm', () => {
     expect(getByText('Username is invalid')).toBeTruthy();
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
-
 
   it('calls onResetError when input value changes and error exists', () => {
     const { getByLabelText } = render(

@@ -25,7 +25,9 @@ describe('apiFetch', () => {
   it('triggers the global unauthorized handler on 401 by default', async () => {
     const handler = jest.fn();
     setOnUnauthorized(handler);
-    mockedFetch.mockResolvedValueOnce(jsonResponse(401, { message: 'expired' }));
+    mockedFetch.mockResolvedValueOnce(
+      jsonResponse(401, { message: 'expired' }),
+    );
 
     await expect(apiFetch('/auth/me')).rejects.toBeInstanceOf(ApiError);
     expect(handler).toHaveBeenCalledTimes(1);
@@ -61,7 +63,9 @@ describe('apiFetch', () => {
 
   it('still throws ApiError tagged with skipAuthHandler=false on a normal 401', async () => {
     setOnUnauthorized(jest.fn());
-    mockedFetch.mockResolvedValueOnce(jsonResponse(401, { message: 'expired' }));
+    mockedFetch.mockResolvedValueOnce(
+      jsonResponse(401, { message: 'expired' }),
+    );
 
     let caught: unknown;
     try {

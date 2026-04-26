@@ -1,7 +1,6 @@
-import React from 'react';
-
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
+import React from 'react';
 import { AppState, Alert } from 'react-native';
 import * as Keychain from 'react-native-keychain';
 
@@ -185,7 +184,10 @@ describe('AuthProvider', () => {
       await result.current.login({ username: 'emily', password: 'secret' });
     });
 
-    expect(mockedAuth.login).toHaveBeenCalledWith({ username: 'emily', password: 'secret' });
+    expect(mockedAuth.login).toHaveBeenCalledWith({
+      username: 'emily',
+      password: 'secret',
+    });
     expect(mockedKeychain.setGenericPassword).toHaveBeenCalled();
     expect(mockedClient.setAuthToken).toHaveBeenCalledWith(TOKEN.accessToken);
     expect(result.current.token).toEqual(TOKEN);
@@ -237,7 +239,9 @@ describe('AuthProvider', () => {
   it('registers an unauthorized handler with the api client', async () => {
     renderHook(() => useAuth(), { wrapper });
 
-    await waitFor(() => expect(mockedClient.setOnUnauthorized).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockedClient.setOnUnauthorized).toHaveBeenCalled(),
+    );
     const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
     expect(typeof handler).toBe('function');
   });
@@ -249,7 +253,9 @@ describe('AuthProvider', () => {
     // login) were silently dropped.
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
-    await waitFor(() => expect(mockedClient.setOnUnauthorized).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockedClient.setOnUnauthorized).toHaveBeenCalled(),
+    );
 
     const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
     if (!handler) {
@@ -277,7 +283,9 @@ describe('AuthProvider', () => {
     // apiFetch both fire for the same response.
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
-    await waitFor(() => expect(mockedClient.setOnUnauthorized).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockedClient.setOnUnauthorized).toHaveBeenCalled(),
+    );
 
     const handler = mockedClient.setOnUnauthorized.mock.calls[0][0];
     if (!handler) {
@@ -337,12 +345,14 @@ describe('AuthProvider', () => {
     let appStateChangeHandler: ((nextState: string) => void) | null = null;
 
     beforeEach(() => {
-      jest.spyOn(AppState, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'change') {
-          appStateChangeHandler = handler as (nextState: string) => void;
-        }
-        return { remove: jest.fn() };
-      });
+      jest
+        .spyOn(AppState, 'addEventListener')
+        .mockImplementation((event, handler) => {
+          if (event === 'change') {
+            appStateChangeHandler = handler as (nextState: string) => void;
+          }
+          return { remove: jest.fn() };
+        });
     });
 
     afterEach(() => {
@@ -519,7 +529,7 @@ describe('AuthProvider', () => {
 
       // TOKEN_A expires in 30 s; TOKEN_B expires in 90 s from BASE_TIME.
       mockedGetTokenExpiryMs
-        .mockReturnValueOnce(BASE_TIME + 30_000)  // called when TOKEN_A is set
+        .mockReturnValueOnce(BASE_TIME + 30_000) // called when TOKEN_A is set
         .mockReturnValueOnce(BASE_TIME + 90_000); // called when TOKEN_B is set
 
       mockedAuth.getMe.mockResolvedValue(USER);

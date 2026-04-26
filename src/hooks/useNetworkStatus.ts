@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-
 import NetInfo from '@react-native-community/netinfo';
+import { useEffect, useState } from 'react';
 
 import { logger } from '@/utils/logger';
 
@@ -19,7 +18,9 @@ export function useNetworkStatus(): { isConnected: boolean | null } {
       .catch(() => {});
 
     const unsubscribe = NetInfo.addEventListener(state => {
-      logger.info('[useNetworkStatus] connection changed', { isConnected: state.isConnected });
+      logger.info('[useNetworkStatus] connection changed', {
+        isConnected: state.isConnected,
+      });
       if (mounted) {
         setIsConnected(state.isConnected);
       }

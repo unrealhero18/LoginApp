@@ -7,6 +7,6 @@ import type { LoginPayload } from '@/types/auth';
 export function useLogin(): UseMutationResult<void, Error, LoginPayload> {
   const { login } = useAuth();
   return useMutation<void, Error, LoginPayload>({
-    mutationFn: (payload) => login(payload),
+    mutationFn: payload => login(payload),
   });
 }

@@ -1,7 +1,7 @@
 ---
 name: aif-improve
 description: Refine and enhance an existing implementation plan with a second iteration. Re-analyzes the codebase, checks for gaps, missing tasks, wrong dependencies, and improves the plan quality. Use after /aif-plan to polish the plan before implementation, or to improve an existing /aif-fix plan.
-argument-hint: "[--list] [@plan-file] [improvement prompt or empty for auto-review]"
+argument-hint: '[--list] [@plan-file] [improvement prompt or empty for auto-review]'
 allowed-tools: Read Write Edit Glob Grep Bash(git *) TaskCreate TaskUpdate TaskList TaskGet AskUserQuestion Questions
 disable-model-invocation: false
 ---
@@ -25,11 +25,13 @@ enhanced plan with better tasks, correct dependencies, more detail
 ### Step 0: Load Config & Find the Plan
 
 **FIRST:** Read `.ai-factory/config.yaml` if it exists to resolve:
+
 - **Paths:** `paths.plan`, `paths.plans`, `paths.fix_plan`, `paths.research`, `paths.description`, and `paths.patches`
 - **Language:** `language.ui` for prompts
 - **Git:** `git.enabled`, `git.base_branch`, `git.create_branches`
 
 If config.yaml doesn't exist, use defaults:
+
 - plan: `paths.plan` (default: `.ai-factory/PLAN.md`)
 - plans/: `.ai-factory/plans/`
 - fix plan: `paths.fix_plan` (default: `.ai-factory/FIX_PLAN.md`)
@@ -69,6 +71,7 @@ If `$ARGUMENTS` contains `--list`, run read-only discovery and stop.
 ```
 
 **Important:** In `--list` mode:
+
 - Do not execute refinement
 - Do not modify files
 - Do not update TaskList/plan content
@@ -113,6 +116,7 @@ To create a plan first, use:
 **1.1: Read the plan file**
 
 Read the found plan file completely. Understand:
+
 - Feature scope and goals
 - Current tasks (subjects, descriptions, dependencies)
 - Settings (testing, logging preferences)
@@ -122,6 +126,7 @@ Read the found plan file completely. Understand:
 **1.2: Read project context**
 
 Read `.ai-factory/DESCRIPTION.md` (use path from config) if it exists:
+
 - Tech stack
 - Architecture
 - Conventions
@@ -147,6 +152,7 @@ This file contains project-specific rules accumulated by `/aif-evolve` from patc
 codebase conventions, and tech-stack analysis. These rules are tailored to the current project.
 
 **How to apply skill-context rules:**
+
 - Treat them as **project-level overrides** for this skill's general instructions
 - When a skill-context rule conflicts with a general rule written in this SKILL.md,
   **the skill-context rule wins** (more specific context takes priority — same principle as nested CLAUDE.md files)
@@ -176,12 +182,14 @@ Now do a **deeper** codebase exploration than what `/aif-plan` did initially:
 **2.1: Trace through existing code paths**
 
 For each task in the plan, find the relevant files:
+
 ```
 Glob + Grep: Find files mentioned in tasks
 Read: Understand current implementation
 ```
 
 Look for:
+
 - Existing patterns the plan should follow
 - Code that already partially implements what a task describes
 - Hidden dependencies the plan missed
@@ -190,6 +198,7 @@ Look for:
 **2.2: Check for integration points**
 
 Look for things the plan might have missed:
+
 - API routes that need updating
 - Database migrations needed
 - Config files that need changes
@@ -200,6 +209,7 @@ Look for things the plan might have missed:
 **2.3: Check for edge cases**
 
 Based on the tech stack and codebase:
+
 - Error handling patterns used in the project
 - Null/undefined safety patterns
 - Authentication/authorization checks needed
@@ -211,26 +221,31 @@ Based on the tech stack and codebase:
 Compare the plan against what you found. Categorize issues:
 
 **3.1: Missing tasks**
+
 - Tasks that should exist but don't (e.g., migration, config update, index creation)
 - Tasks for edge cases not covered
 
 **3.2: Task quality issues**
+
 - Descriptions too vague (no file paths, no specific implementation details)
 - Missing logging requirements
 - Missing error handling details
 - Incorrect file paths
 
 **3.3: Dependency issues**
+
 - Wrong task order (task A depends on B but B comes after A)
 - Missing dependencies (task C needs task A's output but isn't blocked by it)
 - Unnecessary dependencies (tasks could run in parallel)
 
 **3.4: Redundant or duplicate tasks**
+
 - Two tasks doing the same thing
 - Task that's unnecessary because the code already exists
 - Task that duplicates existing functionality
 
 **3.5: Scope issues**
+
 - Tasks too large (should be split)
 - Tasks too small (should be merged)
 - Tasks outside the feature scope (gold-plating)
@@ -238,6 +253,7 @@ Compare the plan against what you found. Categorize issues:
 **3.6: User-prompted improvements (if $ARGUMENTS provided)**
 
 If the user provided specific improvement instructions in `$ARGUMENTS` (excluding `--list` and `@<path>` tokens):
+
 - Apply the user's feedback to the plan
 - Look for tasks that need modification based on the prompt
 - Add new tasks if the user's prompt requires them
@@ -294,6 +310,7 @@ Options:
 ```
 
 **Based on choice:**
+
 - Yes, apply all → apply all improvements to the plan file
 - Let me pick which ones → present each improvement individually for approval
 - No, keep the plan as is → exit without modifications
@@ -319,6 +336,7 @@ Based on user's choice:
 **5.1: Apply task improvements**
 
 For existing tasks that need better descriptions:
+
 ```
 TaskGet(taskId) → read current
 TaskUpdate(taskId, description: "improved description", subject: "improved subject")
@@ -327,6 +345,7 @@ TaskUpdate(taskId, description: "improved description", subject: "improved subje
 **5.2: Add missing tasks**
 
 For new tasks:
+
 ```
 TaskCreate(subject, description, activeForm)
 TaskUpdate(taskId, addBlockedBy: [...]) → set dependencies

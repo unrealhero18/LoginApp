@@ -1,7 +1,7 @@
 ---
 name: aif-architecture
 description: Generate architecture guidelines for the project. Analyzes tech stack from DESCRIPTION.md, recommends an architecture pattern, and creates .ai-factory/ARCHITECTURE.md. Use when setting up project architecture, asking "which architecture", or after /aif setup.
-argument-hint: "[clean|ddd|microservices|monolith|layers]"
+argument-hint: '[clean|ddd|microservices|monolith|layers]'
 allowed-tools: Read Write Glob Grep Bash(mkdir *) AskUserQuestion Questions
 disable-model-invocation: false
 ---
@@ -15,21 +15,25 @@ Generate `.ai-factory/ARCHITECTURE.md` with architecture decisions tailored to t
 ### Step 0: Load Config & Project Context
 
 **FIRST:** Read `.ai-factory/config.yaml` if it exists to resolve:
+
 - **Paths:** `paths.description` and `paths.architecture`
 - **Language:** `language.ui` for prompts and `language.artifacts` for generated architecture content
 
 If config.yaml doesn't exist, use defaults:
+
 - DESCRIPTION.md: `.ai-factory/DESCRIPTION.md`
 - ARCHITECTURE.md: `.ai-factory/ARCHITECTURE.md`
 - Language: `en` (English)
 
 **THEN:** Read `.ai-factory/DESCRIPTION.md` (use path from config) if it exists to understand:
+
 - Tech stack (language, framework, database, ORM)
 - Project size and complexity
 - Core features and requirements
 - Non-functional requirements
 
 **If `.ai-factory/DESCRIPTION.md` does not exist:**
+
 ```
 ⚠️  No project description found.
 
@@ -48,6 +52,7 @@ This file contains project-specific rules accumulated by `/aif-evolve` from patc
 codebase conventions, and tech-stack analysis. These rules are tailored to the current project.
 
 **How to apply skill-context rules:**
+
 - Treat them as **project-level overrides** for this skill's general instructions
 - When a skill-context rule conflicts with a general rule written in this SKILL.md,
   **the skill-context rule wins** (more specific context takes priority — same principle as nested CLAUDE.md files)
@@ -67,9 +72,11 @@ If any rule is violated — fix the output before presenting it to the user.
 Based on project context, evaluate against the decision matrix and recommend an architecture:
 
 **If `$ARGUMENTS` specifies an architecture** (e.g., `/aif-architecture clean`):
+
 - Use that architecture directly, skip to Step 2
 
 **If no specific architecture requested:**
+
 - Evaluate the project against the decision matrix (see Knowledge Base below)
 - Consider: team size, domain complexity, scale requirements, tech stack
 - Present recommendation via `AskUserQuestion`:
@@ -88,6 +95,7 @@ Which architecture pattern should we use?
 ```
 
 Architecture options:
+
 - **Clean Architecture** — strict dependency inversion, good for complex business logic
 - **Domain-Driven Design (DDD)** — bounded contexts, good for complex domains with multiple subdomains
 - **Microservices** — independent deployment, good for large teams with clear domain boundaries
@@ -104,31 +112,38 @@ Generate the resolved architecture artifact (default: `.ai-factory/ARCHITECTURE.
 # Architecture: [Pattern Name]
 
 ## Overview
+
 [1-2 paragraphs: what this architecture is and why it was chosen for THIS project]
 
 ## Decision Rationale
+
 - **Project type:** [from DESCRIPTION.md]
 - **Tech stack:** [language, framework]
 - **Key factor:** [primary reason for this choice]
 
 ## Folder Structure
+
 \`\`\`
 [folder structure adapted to the project's tech stack]
 [use actual framework conventions — e.g., Next.js app/ dir, Laravel app/ dir, Go cmd/ dir]
 \`\`\`
 
 ## Dependency Rules
+
 [What depends on what. Inner vs outer layers. Module boundaries.]
 
 - ✅ [allowed dependency direction]
 - ❌ [forbidden dependency direction]
 
 ## Layer/Module Communication
+
 [How layers or modules communicate with each other]
+
 - [pattern 1]
 - [pattern 2]
 
 ## Key Principles
+
 1. [Principle 1 — adapted to this project]
 2. [Principle 2]
 3. [Principle 3]
@@ -136,21 +151,25 @@ Generate the resolved architecture artifact (default: `.ai-factory/ARCHITECTURE.
 ## Code Examples
 
 ### [Example 1 title]
+
 \`\`\`[language]
 [code example in the project's language/framework]
 \`\`\`
 
 ### [Example 2 title]
+
 \`\`\`[language]
 [code example showing dependency rule]
 \`\`\`
 
 ## Anti-Patterns
+
 - ❌ [What NOT to do in this architecture]
 - ❌ [Common mistake to avoid]
 ```
 
 **Rules for generation:**
+
 - Adapt ALL examples to the project's language and framework (don't use TypeScript examples for a Go project)
 - Use the project's actual conventions (import paths, naming, etc.)
 - Keep it practical — focus on rules that affect day-to-day development
@@ -162,6 +181,7 @@ If the resolved DESCRIPTION.md path exists, add an `## Architecture` section (or
 
 ```markdown
 ## Architecture
+
 See the configured architecture artifact for detailed architecture guidelines.
 Pattern: [chosen pattern name]
 ```
@@ -207,14 +227,14 @@ Reference material for architecture evaluation and generation. This content info
 
 ### Decision Matrix
 
-| Factor | Layered | Clean Architecture | Modular Monolith | DDD | Microservices |
-|--------|---------|-------------------|-------------------|-----|---------------|
-| Team size | 1-5 | 1-15 | 5-30 | 5-30 | 20+ |
-| Domain complexity | Low | Medium-High | Medium-High | High | High |
-| Scale requirements | Low | Moderate | Moderate-High | Moderate-High | Very High |
-| Deploy independence | ❌ | ❌ | Partial | Partial | ✅ |
-| Initial velocity | ✅ Fast | Medium | ✅ Fast | Medium | ❌ Slow |
-| Operational complexity | ✅ Low | ✅ Low | ✅ Low | Medium | ❌ High |
+| Factor                 | Layered | Clean Architecture | Modular Monolith | DDD           | Microservices |
+| ---------------------- | ------- | ------------------ | ---------------- | ------------- | ------------- |
+| Team size              | 1-5     | 1-15               | 5-30             | 5-30          | 20+           |
+| Domain complexity      | Low     | Medium-High        | Medium-High      | High          | High          |
+| Scale requirements     | Low     | Moderate           | Moderate-High    | Moderate-High | Very High     |
+| Deploy independence    | ❌      | ❌                 | Partial          | Partial       | ✅            |
+| Initial velocity       | ✅ Fast | Medium             | ✅ Fast          | Medium        | ❌ Slow       |
+| Operational complexity | ✅ Low  | ✅ Low             | ✅ Low           | Medium        | ❌ High       |
 
 ### Quick Decision Guide
 
@@ -248,6 +268,7 @@ Unclear requirements? → Start simple, refactor when patterns emerge
 ```
 
 **Folder Structure (TypeScript example):**
+
 ```
 src/
 ├── domain/                 # Core business logic (no dependencies)
@@ -268,6 +289,7 @@ src/
 ```
 
 **Dependency Rules:**
+
 - Domain → nothing (pure business logic)
 - Application → Domain only
 - Infrastructure → Application + Domain (implements interfaces)
@@ -278,16 +300,19 @@ src/
 **Core Principle:** Software structure mirrors the business domain. Bounded contexts define clear boundaries.
 
 **Strategic Patterns:**
+
 - Bounded Contexts: explicit boundaries around domain models
 - Context Mapping: how contexts communicate (Shared Kernel, Customer/Supplier, Anti-Corruption Layer)
 
 **Tactical Patterns:**
+
 - Entities: identity-based objects
 - Value Objects: immutable, equality by value
 - Aggregates: consistency boundaries (all invariants enforced through aggregate root)
 - Domain Events: communicate state changes between contexts
 
 **Folder Structure (TypeScript example):**
+
 ```
 src/
 ├── contexts/
@@ -307,20 +332,24 @@ src/
 ### Microservices
 
 **When to Use:**
+
 - Large teams needing independent deployment
 - Different scaling requirements per service
 - Polyglot persistence needs
 
 **When NOT to Use:**
+
 - Small team (< 10 people)
 - Unclear domain boundaries
 - Startups exploring product-market fit
 
 **Communication Patterns:**
+
 - Synchronous (HTTP/gRPC): queries, real-time validation
 - Asynchronous (Events/Messages): side effects, eventual consistency
 
 **Data Patterns:**
+
 - Database per Service
 - Saga Pattern for distributed transactions
 
@@ -329,6 +358,7 @@ src/
 **Core Principle:** Single deployment unit with strong module boundaries. Best of both worlds — simple ops, future extraction ready.
 
 **Folder Structure (TypeScript example):**
+
 ```
 src/
 ├── modules/
@@ -348,6 +378,7 @@ src/
 ```
 
 **Module Communication Rules:**
+
 - Modules expose explicit public API via index file
 - Other modules use ONLY the public API
 - Never reach into module internals
@@ -357,6 +388,7 @@ src/
 **Core Principle:** Separate concerns into horizontal layers. Each layer only depends on the layer directly below it.
 
 **Folder Structure (TypeScript example):**
+
 ```
 src/
 ├── routes/                # Presentation layer (HTTP handlers)
@@ -368,5 +400,6 @@ src/
 ```
 
 **Dependency Rules:**
+
 - Routes → Controllers → Services → Repositories → Database
 - No skipping layers (routes should not call repositories directly)

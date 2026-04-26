@@ -43,7 +43,10 @@ jest.mock('react-native-safe-area-context', () => {
 jest.mock('react-native-linear-gradient', () => {
   const React = require('react');
   const { View } = require('react-native');
-  return ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) =>
+  return ({
+    children,
+    ...props
+  }: { children?: React.ReactNode } & Record<string, unknown>) =>
     React.createElement(View, props, children);
 });
 
@@ -61,9 +64,11 @@ jest.mock('react-native-keychain', () => ({
     WHEN_UNLOCKED: 'AccessibleWhenUnlocked',
     AFTER_FIRST_UNLOCK: 'AccessibleAfterFirstUnlock',
     ALWAYS: 'AccessibleAlways',
-    WHEN_PASSCODE_SET_THIS_DEVICE_ONLY: 'AccessibleWhenPasscodeSetThisDeviceOnly',
+    WHEN_PASSCODE_SET_THIS_DEVICE_ONLY:
+      'AccessibleWhenPasscodeSetThisDeviceOnly',
     WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'AccessibleWhenUnlockedThisDeviceOnly',
-    AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 'AccessibleAfterFirstUnlockThisDeviceOnly',
+    AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY:
+      'AccessibleAfterFirstUnlockThisDeviceOnly',
   },
 }));
 
@@ -82,16 +87,16 @@ globalThis.fetch = jest.fn();
 
 // --- React Query Configuration ---
 // Disable React Query's default behavior of attaching global listeners in tests
-onlineManager.setEventListener(() => () => { });
-focusManager.setEventListener(() => () => { });
+onlineManager.setEventListener(() => () => {});
+focusManager.setEventListener(() => () => {});
 
 // --- Lifecycle Hooks ---
 beforeEach(() => {
   jest.useFakeTimers();
-  jest.spyOn(console, 'debug').mockImplementation(() => { });
-  jest.spyOn(console, 'info').mockImplementation(() => { });
-  jest.spyOn(console, 'log').mockImplementation(() => { });
-  jest.spyOn(console, 'warn').mockImplementation(() => { });
+  jest.spyOn(console, 'debug').mockImplementation(() => {});
+  jest.spyOn(console, 'info').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 afterEach(async () => {

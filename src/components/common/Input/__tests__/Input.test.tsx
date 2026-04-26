@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import React from 'react';
 
 import { Input } from '../index';
 
@@ -49,7 +48,12 @@ describe('Input', () => {
 
   it('hides clear button when error is present', () => {
     render(
-      <Input {...baseProps} value="hello" onClear={jest.fn()} errorMessage="Invalid" />,
+      <Input
+        {...baseProps}
+        value="hello"
+        onClear={jest.fn()}
+        errorMessage="Invalid"
+      />,
     );
 
     expect(screen.queryByRole('button')).toBeNull();
@@ -65,7 +69,11 @@ describe('Input', () => {
 
   it('shows error message and no clear button in error state', () => {
     render(
-      <Input {...baseProps} value="bad" errorMessage="This field is required" />,
+      <Input
+        {...baseProps}
+        value="bad"
+        errorMessage="This field is required"
+      />,
     );
 
     expect(screen.getByText('This field is required')).toBeTruthy();

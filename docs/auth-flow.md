@@ -16,12 +16,12 @@ LoginApp's authentication is built on the [DummyJSON Auth API](https://dummyjson
 
 For testing, you can use any user from [DummyJSON Users](https://dummyjson.com/users). Most follow the pattern `username` + `pass`:
 
-| Role | Username | Password |
-| :--- | :--- | :--- |
-| **Admin** | `emilys` | `emilyspass` |
-| **Admin** | `michaelw` | `michaelwpass` |
-| **Moderator** | `oliviaw` | `oliviawpass` |
-| **User** | `averyp` | `averyppass` |
+| Role          | Username   | Password       |
+| :------------ | :--------- | :------------- |
+| **Admin**     | `emilys`   | `emilyspass`   |
+| **Admin**     | `michaelw` | `michaelwpass` |
+| **Moderator** | `oliviaw`  | `oliviawpass`  |
+| **User**      | `averyp`   | `averyppass`   |
 
 ## Architecture
 
@@ -125,9 +125,9 @@ Each stack has its own param list type (`AuthStackParamList`, `AppStackParamList
 
 ## Session invalidation
 
-| Trigger | Path | Result |
-|---|---|---|
-| `apiFetch` returns 401/403 | `setOnUnauthorized` registry | `AuthProvider.logout()` |
+| Trigger                                                    | Path                                                                                | Result                  |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------- |
+| `apiFetch` returns 401/403                                 | `setOnUnauthorized` registry                                                        | `AuthProvider.logout()` |
 | React Query mutation/query fails with `ApiError` (401/403) | `QueryCache`/`MutationCache` global `onError` → `setQueryClientUnauthorizedHandler` | `AuthProvider.logout()` |
 
 Both paths route through the same handler. Logout is idempotent — keychain, in-memory state, and `setAuthToken(null)` are all safe to call repeatedly.

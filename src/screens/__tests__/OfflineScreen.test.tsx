@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { fireEvent, render } from '@testing-library/react-native';
+import React from 'react';
 
 import { useAuth } from '@/hooks/useAuth';
 import OfflineScreen from '@/screens/OfflineScreen';
@@ -15,7 +14,9 @@ jest.mock('@/hooks/useAuth');
 
 const mockRetryHydration = jest.fn();
 
-function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
+function makeAuthValue(
+  overrides: Partial<AuthContextValue> = {},
+): AuthContextValue {
   return {
     user: null,
     token: null,

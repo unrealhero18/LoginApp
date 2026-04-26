@@ -22,7 +22,7 @@ export class LoginProfileFetchError extends Error {
 
 export function resolveErrorMessage(
   error: Error | null,
-  message: string = DEFAULT_ERROR_MESSAGE
+  message: string = DEFAULT_ERROR_MESSAGE,
 ): string | null {
   if (!error) {
     return null;

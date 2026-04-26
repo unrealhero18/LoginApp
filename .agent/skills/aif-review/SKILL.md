@@ -1,7 +1,7 @@
 ---
 name: aif-review
 description: Perform code review on staged changes or a pull request. Checks for bugs, security issues, performance problems, and best practices. Use when user says "review code", "check my code", "review PR", or "is this code okay".
-argument-hint: "[PR number | branch/commit/tag | empty]"
+argument-hint: '[PR number | branch/commit/tag | empty]'
 allowed-tools: Bash(git *) Bash(gh *) Read Glob Grep AskUserQuestion
 disable-model-invocation: false
 ---
@@ -13,11 +13,13 @@ Perform thorough code reviews focusing on correctness, security, performance, an
 ## Step 0: Load Config
 
 **FIRST:** Read `.ai-factory/config.yaml` if it exists to resolve:
+
 - **Paths:** `paths.description`, `paths.architecture`, `paths.rules_file`, `paths.roadmap`, and `paths.rules`
 - **Language:** `language.ui` for review summary language
 - **Git:** `git.base_branch` for branch comparison guidance
 
 If config.yaml doesn't exist, use defaults:
+
 - Paths: `.ai-factory/` for all artifacts
 - Language: `en` (English)
 - Git: `base_branch: main`
@@ -39,11 +41,13 @@ If config.yaml doesn't exist, use defaults:
 ### With Git Ref (Commits Mode)
 
 Argument routing chain:
+
 1. **Empty** → staged review (see above)
 2. **Digits or `#N`** → PR mode (see above)
 3. **Everything else** → validate via `git rev-parse --verify` → commits mode or ask user
 
 Validation:
+
 ```bash
 git rev-parse --verify <argument> 2>/dev/null
 ```
@@ -60,6 +64,7 @@ git rev-parse --verify <argument> 2>/dev/null
   ```
 
   **Based on choice:**
+
   - "Review staged changes" → run staged review (default mode)
   - "Cancel" → inform the user that review was cancelled → **STOP**
   - "Other" → user provides corrected ref → re-validate via `rev-parse`
@@ -69,9 +74,11 @@ git rev-parse --verify <argument> 2>/dev/null
 **Steps:**
 
 1. **Get commit list** between the ref and HEAD:
+
    ```bash
    git log --oneline --reverse <ref>..HEAD
    ```
+
    If no commits found (HEAD is at or behind `<ref>`), inform the user and **stop**.
 
 2. **Check commit count:**
@@ -87,16 +94,20 @@ git rev-parse --verify <argument> 2>/dev/null
    ```
 
    **Based on choice:**
+
    - "Review all" → continue with the full commit list
    - "Review only the last 20" → truncate the list to the 20 most recent commits (keep chronological order)
    - "Cancel" → inform the user that review was cancelled → **STOP**
 
 3. **Review each commit:**
+
    ```bash
    git show <commit-hash> --stat
    git show <commit-hash>
    ```
+
    For each commit check:
+
    - Does the commit message match the actual changes?
    - Are changes atomic (single logical unit per commit)?
    - Are there any issues introduced in this specific commit?
@@ -112,6 +123,7 @@ Before finalizing review findings, run read-only context gates:
 - Check the resolved roadmap artifact (if present) for milestone alignment and mention missing linkage for likely `feat`/`fix`/`perf` work.
 
 Gate result severity:
+
 - `WARN` for non-blocking inconsistencies or missing optional files.
 - `ERROR` only for explicit blocking criteria requested by the user/review policy.
 
@@ -125,6 +137,7 @@ This file contains project-specific rules accumulated by `/aif-evolve` from patc
 codebase conventions, and tech-stack analysis. These rules are tailored to the current project.
 
 **How to apply skill-context rules:**
+
 - Treat them as **project-level overrides** for this skill's general instructions
 - When a skill-context rule conflicts with a general rule written in this SKILL.md,
   **the skill-context rule wins** (more specific context takes priority — same principle as nested CLAUDE.md files)
@@ -142,6 +155,7 @@ If any rule is violated — fix the output before presenting it to the user.
 ## Review Checklist
 
 ### Correctness
+
 - [ ] Logic errors or bugs
 - [ ] Edge cases handling
 - [ ] Null/undefined checks
@@ -149,6 +163,7 @@ If any rule is violated — fix the output before presenting it to the user.
 - [ ] Type safety (if applicable)
 
 ### Security
+
 - [ ] SQL injection vulnerabilities
 - [ ] XSS vulnerabilities
 - [ ] Command injection
@@ -158,6 +173,7 @@ If any rule is violated — fix the output before presenting it to the user.
 - [ ] Input validation
 
 ### Performance
+
 - [ ] N+1 query problems
 - [ ] Unnecessary re-renders (React)
 - [ ] Memory leaks
@@ -166,6 +182,7 @@ If any rule is violated — fix the output before presenting it to the user.
 - [ ] Large payload sizes
 
 ### Best Practices
+
 - [ ] Code duplication
 - [ ] Dead code
 - [ ] Magic numbers/strings
@@ -174,6 +191,7 @@ If any rule is violated — fix the output before presenting it to the user.
 - [ ] DRY principle
 
 ### Testing
+
 - [ ] Test coverage for new code
 - [ ] Edge cases tested
 - [ ] Mocking appropriateness
@@ -187,18 +205,23 @@ If any rule is violated — fix the output before presenting it to the user.
 **Risk Level:** 🟢 Low / 🟡 Medium / 🔴 High
 
 ### Context Gates
+
 [Architecture / Rules / Roadmap gate results with WARN/ERROR labels]
 
 ### Critical Issues
+
 [Must be fixed before merge]
 
 ### Suggestions
+
 [Nice to have improvements]
 
 ### Questions
+
 [Clarifications needed]
 
 ### Positive Notes
+
 [Good patterns observed]
 ```
 
@@ -234,6 +257,7 @@ Review all commits on the current branch compared to tag `v1.0.0`.
 ## Integration
 
 If GitHub MCP is configured, can:
+
 - Post review comments directly to PR
 - Request changes or approve
 - Add labels based on review outcome

@@ -4,11 +4,13 @@ Branch: feature/client-side-jwt-expiry-check
 Created: 2026-04-26
 
 ## Settings
+
 - Testing: yes
 - Logging: minimal
 - Docs: no
 
 ## Roadmap Linkage
+
 Milestone: "Phase 2 — Login Form & Authentication Flow"
 Rationale: This completes the planned Session invalidation item — client-side JWT expiry check before network calls.
 
@@ -27,6 +29,7 @@ Rationale: This completes the planned Session invalidation item — client-side 
 ### Phase 2: AuthProvider Integration
 
 - [x] Task 2: Integrate expiry check into AuthProvider hydration (blocked by Task 1)
+
   - In `src/providers/AuthProvider.tsx`, inside `hydrate()`, after `loadToken()` returns a non-null token:
     - Call `isTokenExpired(stored.accessToken)`
     - If expired: `clearToken()`, return early without calling `getMe()`

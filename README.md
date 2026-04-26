@@ -16,11 +16,11 @@ pnpm ios                  # or: pnpm android
 
 ## Test Credentials
 
-| Username | Password |
-| :--- | :--- |
+| Username | Password     |
+| :------- | :----------- |
 | `emilys` | `emilyspass` |
 
-*See [Auth Flow](docs/auth-flow.md#test-accounts) for more test users.*
+_See [Auth Flow](docs/auth-flow.md#test-accounts) for more test users._
 
 ## Key Features
 
@@ -33,21 +33,21 @@ pnpm ios                  # or: pnpm android
 
 ## Tech Stack
 
-| Layer | Library |
-|-------|---------|
-| Framework | React Native 0.85 + TypeScript |
-| Navigation | React Navigation v7 (native stack) |
-| Server state | TanStack React Query v5 |
-| Secure storage | react-native-keychain |
-| API | [DummyJSON Auth](https://dummyjson.com/docs/auth) |
-| Testing | Jest + @testing-library/react-native |
+| Layer          | Library                                           |
+| -------------- | ------------------------------------------------- |
+| Framework      | React Native 0.85 + TypeScript                    |
+| Navigation     | React Navigation v7 (native stack)                |
+| Server state   | TanStack React Query v5                           |
+| Secure storage | react-native-keychain                             |
+| API            | [DummyJSON Auth](https://dummyjson.com/docs/auth) |
+| Testing        | Jest + @testing-library/react-native              |
 
 ## Documentation
 
-| Guide | Description |
-|-------|-------------|
-| [Getting Started](docs/getting-started.md) | Prerequisites, install, run iOS/Android, run tests |
-| [Auth Flow](docs/auth-flow.md) | Architecture, modules, screen behavior, session invalidation |
+| Guide                                      | Description                                                  |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| [Getting Started](docs/getting-started.md) | Prerequisites, install, run iOS/Android, run tests           |
+| [Auth Flow](docs/auth-flow.md)             | Architecture, modules, screen behavior, session invalidation |
 
 ## License
 
