@@ -105,7 +105,7 @@ export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Pro
   // Handle unauthorized responses by triggering the global handler — unless
   // the caller explicitly opted out (login endpoint, public endpoints, etc.).
   if (response.status === 401 || response.status === 403) {
-    logger.warn('[apiFetch] unauthorized response', { path, status: response.status });
+    logger.info('[apiFetch] unauthorized response', { path, status: response.status });
     if (!skipAuthHandler) {
       onUnauthorized?.();
     }

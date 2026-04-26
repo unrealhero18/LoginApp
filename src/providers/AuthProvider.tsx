@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -145,7 +146,8 @@ export function AuthProvider({ children }: Props) {
         setUser(profile);
       } catch (error) {
         // If profile fetch fails (e.g. token expired), clear everything
-        logger.warn('[AuthProvider] hydration failed; clearing stored token', error);
+        logger.info('[AuthProvider] hydration failed; clearing stored token', error);
+        Alert.alert('Session Expired', 'Your session has expired. Please login again.');
         setAuthToken(null);
         try {
           await clearToken();

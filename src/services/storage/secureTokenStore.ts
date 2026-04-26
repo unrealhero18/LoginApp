@@ -59,7 +59,7 @@ export async function loadToken(): Promise<AuthToken | null> {
     const parsed: unknown = JSON.parse(credentials.password);
 
     if (!isAuthToken(parsed)) {
-      logger.warn('[secureTokenStore] stored token failed schema validation');
+      logger.info('[secureTokenStore] stored token failed schema validation');
       return null;
     }
 
