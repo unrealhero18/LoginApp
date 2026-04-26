@@ -1,5 +1,5 @@
+import { ValidationMessages } from '@/constants/messages';
 import type { LoginPayload } from '@/types/auth';
-
 import type { FormErrors } from '@/types/form';
 
 /**
@@ -12,13 +12,13 @@ export const validateLogin = (values: LoginPayload): FormErrors<LoginPayload> =>
   const errors: FormErrors<LoginPayload> = {};
 
   if (!values.username) {
-    errors.username = 'Username is required';
+    errors.username = ValidationMessages.USERNAME_REQUIRED;
   } else if (values.username.length < 3) {
-    errors.username = 'Username is invalid';
+    errors.username = ValidationMessages.USERNAME_INVALID;
   }
 
   if (!values.password) {
-    errors.password = 'Password is required';
+    errors.password = ValidationMessages.PASSWORD_REQUIRED;
   }
 
   return errors;

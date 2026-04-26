@@ -10,6 +10,7 @@ import { getLoginErrorMessage } from '@/utils/error';
 
 import { validateLogin } from '@/utils/validation';
 
+import { AuthMessages, ErrorMessages } from '@/constants/messages';
 import { Spacing } from '@/theme/spacing';
 
 import type { LoginPayload } from '@/types/auth';
@@ -36,7 +37,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
   return (
     <View style={styles.container}>
       <Input
-        label="Username"
+        label={AuthMessages.USERNAME_LABEL}
         value={values.username}
         onChangeText={handleChange('username')}
         onClear={() => handleChange('username')('')}
@@ -49,7 +50,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
       />
 
       <Input
-        label="Password"
+        label={AuthMessages.PASSWORD_LABEL}
         value={values.password}
         onChangeText={handleChange('password')}
         onClear={() => handleChange('password')('')}
@@ -65,7 +66,7 @@ export const LoginForm = ({ onSubmit, isLoading, error, onResetError }: LoginFor
       <ErrorMessage message={errorMessage} testID="login-error" />
 
       <PrimaryButton
-        title="Login"
+        title={AuthMessages.LOGIN_BUTTON}
         onPress={handleSubmit}
         disabled={!isComplete}
         isLoading={isLoading}

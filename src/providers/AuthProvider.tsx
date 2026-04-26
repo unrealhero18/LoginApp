@@ -1,14 +1,23 @@
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
+import { AppState, Alert } from 'react-native';
 
 import NetInfo from '@react-native-community/netinfo';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { ErrorMessages } from '@/constants/messages';
 import { setQueryClientUnauthorizedHandler } from '@/providers/queryClient';
 import { getMe, login as loginRequest } from '@/services/api/auth';
 import { ApiError, setAuthToken, setOnUnauthorized } from '@/services/api/client';
 import { clearToken, loadToken, saveToken } from '@/services/storage/secureTokenStore';
 import { LoginProfileFetchError } from '@/utils/error';
+import { getTokenExpiryMs, isTokenExpired } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
@@ -51,6 +60,8 @@ export function AuthProvider({ children }: Props) {
   const [token, setToken] = useState<AuthToken | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+  const tokenRef = useRef<AuthToken | null>(null);
+  tokenRef.current = token;
 
   /**
    * Logs out the user by clearing state, storage, and the query cache.
@@ -71,6 +82,7 @@ export function AuthProvider({ children }: Props) {
     } catch (error) {
       logger.error('[AuthProvider] failed to clear token on logout', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient]);
 
   /**
@@ -115,6 +127,7 @@ export function AuthProvider({ children }: Props) {
         throw new LoginProfileFetchError(error);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -150,24 +163,38 @@ export function AuthProvider({ children }: Props) {
       return;
     }
 
-    // 3. Set token in API client for subsequent requests
+    // 3. Reject expired tokens before making any network call
+    if (isTokenExpired(stored.accessToken)) {
+      logger.info('[AuthProvider] stored token expired on hydration — clearing session');
+      try {
+        await clearToken();
+      } catch (clearError) {
+        logger.error('[AuthProvider] failed to clear expired token on hydration', clearError);
+      }
+      // Note: We omit Alert.alert here because the app hasn't rendered yet.
+      // Silently dropping to the login screen is less jarring than a popup
+      // before the first frame.
+      setIsHydrating(false);
+      return;
+    }
+
+    // 4. Set token in API client for subsequent requests
     setAuthToken(stored.accessToken);
 
     try {
-      // 4. Verify session by fetching user profile
+      // 5. Verify session by fetching user profile
       const profile = await getMe();
       if (cancelledRef?.value) return;
 
-      // 5. Update state with restored session
+      // 6. Update state with restored session
       setToken(stored);
       setUser(profile);
     } catch (error) {
       if (cancelledRef?.value) return;
 
       if (error instanceof ApiError) {
-        // API-level rejection (expired/invalid token) — clear everything
         logger.info('[AuthProvider] hydration failed; clearing stored token', error);
-        Alert.alert('Session Expired', 'Your session has expired. Please login again.');
+        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
         setAuthToken(null);
         setIsOffline(false);
         try {
@@ -185,6 +212,7 @@ export function AuthProvider({ children }: Props) {
         setIsHydrating(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -240,6 +268,70 @@ export function AuthProvider({ children }: Props) {
       setQueryClientUnauthorizedHandler(null);
     };
   }, [logout]);
+
+  /**
+   * Effect to check JWT expiry when the app returns to the foreground.
+   * Uses a ref to read the latest token without the effect re-registering on every token change.
+   */
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState !== 'active') return;
+
+      const currentToken = tokenRef.current;
+      if (!currentToken) return;
+
+      if (isTokenExpired(currentToken.accessToken)) {
+        logger.info('[AuthProvider] token expired on foreground — logging out');
+        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+        logout().catch(() => {});
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [logout]);
+
+  /**
+   * Effect to schedule a logout exactly when the current token expires.
+   * Covers the case where the user keeps the app foregrounded past expiry —
+   * the AppState listener alone cannot help here because no transition fires.
+   *
+   * Note: setTimeout is paused while the JS thread sleeps (app backgrounded
+   * on iOS). The AppState listener above is the safety net for that case.
+   */
+  useEffect(() => {
+    if (!token) return;
+
+    const expiryMs = getTokenExpiryMs(token.accessToken);
+    if (expiryMs === null) return;
+
+    const msUntilExpiry = expiryMs - Date.now();
+
+    if (msUntilExpiry <= 0) {
+      logger.info('[AuthProvider] token already expired on schedule — logging out');
+      Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+      logout().catch(() => {});
+      return;
+    }
+
+    const timerId = setTimeout(() => {
+      // Guard: if logout already ran (e.g. via the 401 handler or AppState
+      // listener), tokenRef.current will be null — skip to avoid a double-logout.
+      if (!tokenRef.current) return;
+      logger.info('[AuthProvider] token expiry timer fired — logging out');
+
+      // Only show the alert if the app is currently in the foreground.
+      // If backgrounded, the AppState listener will handle the alert on foreground.
+      if (AppState.currentState === 'active') {
+        Alert.alert(ErrorMessages.SESSION_EXPIRED_TITLE, ErrorMessages.SESSION_EXPIRED);
+      }
+
+      logout().catch(() => {});
+    }, msUntilExpiry);
+
+    return () => clearTimeout(timerId);
+  }, [token, logout]);
 
   // Note: useMemo is intentionally used here to prevent consumers from
   // re-rendering on every AuthProvider render.

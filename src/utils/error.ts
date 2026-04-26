@@ -3,8 +3,6 @@ import { ApiError } from '@/services/api/client';
 
 export const DEFAULT_ERROR_MESSAGE = ErrorMessages.GENERIC;
 
-const FALLBACK_PROFILE_FETCH_MESSAGE = 'Profile fetch failed after login';
-
 /**
  * Thrown when the post-login profile fetch fails. Distinct from a credential
  * rejection so the UI can display the right copy. The original failure is
@@ -16,7 +14,7 @@ export class LoginProfileFetchError extends Error {
     const message =
       cause instanceof Error && cause.message
         ? cause.message
-        : FALLBACK_PROFILE_FETCH_MESSAGE;
+        : ErrorMessages.FALLBACK_PROFILE_FETCH;
     super(message, { cause });
     this.name = 'LoginProfileFetchError';
   }

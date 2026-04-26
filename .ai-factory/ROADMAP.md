@@ -64,6 +64,7 @@ Completed: 2026-04-25 (`feature/auth-flow`)
 - ✅ Global API interceptor or React Query `QueryCache` global callback detects 401/403
 - ✅ Automatically triggers `AuthProvider.logout()` (clears SecureStore and auth state)
 - ✅ Works at runtime: state update instantly drops the user from `AppStack` to `AuthStack` without local `useEffect` or component-level `onError` handling
+- ✅ Client-side JWT expiry check — decode `exp` claim from the stored token without a network request; if expired, call `logout()` immediately. Checked in two places: (1) `AuthProvider` hydration on app start, (2) `AppState` `change` listener when the app returns to foreground. Complements the existing 401/403 interceptor — the interceptor remains as fallback for server-side revocation and clock skew. (delivered `feature/client-side-jwt-expiry-check`, 2026-04-26)
 
 ---
 

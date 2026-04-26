@@ -72,6 +72,11 @@ jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(() => jest.fn()),
 }));
 
+jest.mock('@/utils/jwt', () => ({
+  isTokenExpired: jest.fn().mockReturnValue(false),
+  getTokenExpiryMs: jest.fn().mockReturnValue(null),
+}));
+
 // --- Global Stubs ---
 globalThis.fetch = jest.fn();
 

@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
+import { OfflineMessages } from '@/constants/messages';
 import { useAuth } from '@/hooks/useAuth';
 
 import { Colors } from '@/theme/colors';
@@ -13,17 +14,17 @@ export default function OfflineScreen() {
   const { token, retryHydration } = useAuth();
 
   const message = token
-    ? 'Your session is saved. Connect to the internet and tap Reconnect to continue.'
-    : 'An internet connection is required to continue. Please connect and tap Reconnect.';
+    ? OfflineMessages.SESSION_SAVED
+    : OfflineMessages.CONNECTION_REQUIRED;
 
   return (
     <View style={styles.container}>
       <AppText fontWeight="600" style={styles.title}>
-        No Internet Connection
+        {OfflineMessages.TITLE}
       </AppText>
       <AppText style={styles.message}>{message}</AppText>
       <View style={styles.actions}>
-        <PrimaryButton title="Reconnect" onPress={retryHydration} />
+        <PrimaryButton title={OfflineMessages.RECONNECT_BUTTON} onPress={retryHydration} />
       </View>
     </View>
   );

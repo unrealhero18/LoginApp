@@ -6,7 +6,7 @@ import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
-import { ErrorMessages } from '@/constants/messages';
+import { ErrorMessages, AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -39,7 +39,7 @@ export default function ProfileScreen(_: Props) {
       return (
         <View style={styles.container}>
           <ErrorMessage message={ErrorMessages.PROFILE_FAILURE} testID="profile-error" />
-          <PrimaryButton title="Retry" onPress={() => refetch()} />
+          <PrimaryButton title={AuthMessages.RETRY_BUTTON} onPress={() => refetch()} />
         </View>
       );
     }
@@ -57,7 +57,7 @@ export default function ProfileScreen(_: Props) {
       <AppText style={styles.meta}>{data.email}</AppText>
 
       <View style={styles.actions}>
-        <PrimaryButton title="Logout" onPress={() => logout()} />
+        <PrimaryButton title={AuthMessages.LOGOUT_BUTTON} onPress={() => logout()} />
       </View>
     </View>
   );
