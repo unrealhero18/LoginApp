@@ -3,6 +3,8 @@ import { StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
 import { ButtonBase } from '@/components/common/Button/ButtonBase';
+import { cn } from '@/utils/styles';
+
 import { Colors } from '@/theme/colors';
 import { Typography } from '@/theme/typography';
 
@@ -14,7 +16,11 @@ type Props = {
 
 export function SecondaryButton({ title, disabled = false, onPress }: Props) {
   return (
-    <ButtonBase disabled={disabled} onPress={onPress} style={styles.background}>
+    <ButtonBase
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => cn(styles, 'background', { pressed })}
+    >
       <AppText fontWeight="500" style={styles.label}>
         {title}
       </AppText>
@@ -25,6 +31,9 @@ export function SecondaryButton({ title, disabled = false, onPress }: Props) {
 const styles = StyleSheet.create({
   background: {
     backgroundColor: Colors.WHITE,
+  },
+  pressed: {
+    backgroundColor: Colors.GRAY,
   },
   label: {
     fontSize: Typography.size.md,

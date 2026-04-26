@@ -1,14 +1,16 @@
 import React from 'react';
-import { Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+
+import { cn } from '@/utils/styles';
 
 import { Spacing } from '@/theme/spacing';
-import { cn } from '@/utils/styles';
+import { globalStyles } from '@/theme/styles';
 
 type Props = {
   children: React.ReactNode;
   disabled?: boolean;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle> | ((state: { pressed: boolean }) => StyleProp<ViewStyle>);
 };
 
 export function ButtonBase({
@@ -19,7 +21,10 @@ export function ButtonBase({
 }: Props) {
   return (
     <Pressable
-      style={[cn(styles, 'base', { disabled }), style]}
+      style={({ pressed }) => [
+        cn([styles, globalStyles], 'base', { disabled, pressed }),
+        typeof style === 'function' ? style({ pressed }) : style,
+      ]}
       onPress={onPress}
       disabled={disabled}
     >

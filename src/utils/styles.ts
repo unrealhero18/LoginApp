@@ -9,15 +9,21 @@ import {
 type GenericStyle = ViewStyle | TextStyle | ImageStyle;
 
 export function cn<T extends Record<string, GenericStyle>>(
-  styles: T,
+  styles: T | T[],
   ...inputs: ClassValue[]
 ): StyleProp<GenericStyle>[] {
   const classNames = clsx(...inputs);
   if (!classNames) return [];
 
+  const styleMaps = Array.isArray(styles) ? styles : [styles];
+
   return classNames
     .split(' ')
     .filter(Boolean)
-    .map(key => styles[key as keyof T])
-    .filter((style): style is T[keyof T] => !!style);
+    .flatMap(key =>
+      styleMaps.map(
+        map => (map as Record<string, GenericStyle | undefined>)[key],
+      ),
+    )
+    .filter((v): v is GenericStyle => !!v);
 }

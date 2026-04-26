@@ -3,7 +3,6 @@ import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import BackIcon from '@/assets/icons/back.svg';
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton, SecondaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
@@ -11,8 +10,12 @@ import { ErrorMessages, AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { useAuth, useProfile } from '@/hooks';
 import { AppStackParamList } from '@/navigation/RootNavigator';
+import { cn } from '@/utils/styles';
+
+import BackIcon from '@/assets/icons/back.svg';
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
+import { globalStyles } from '@/theme/styles';
 import { Typography } from '@/theme/typography';
 
 type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
@@ -58,7 +61,12 @@ export default function ProfileScreen(_: Props) {
     return (
       <>
         <View style={styles.topRow}>
-          <Pressable onPress={() => logout()} testID="back-arrow" hitSlop={8}>
+          <Pressable
+            onPress={() => logout()}
+            testID="back-arrow"
+            hitSlop={8}
+            style={({ pressed }) => cn([globalStyles, styles], 'backButton', { pressed })}
+          >
             <BackIcon width={24} height={24} />
           </Pressable>
           <AppText fontWeight="600" style={styles.greeting}>
@@ -102,5 +110,8 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: 24,
+  },
+  pressed: {
+    opacity: 0.5,
   },
 });
