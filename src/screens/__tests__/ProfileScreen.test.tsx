@@ -56,14 +56,12 @@ describe('ProfileScreen', () => {
     mockedAuth.getMe.mockResolvedValue(USER);
   });
 
-  it('renders the authenticated user and a logout button after data resolves', async () => {
+  it('renders the greeting and a logout button after data resolves', async () => {
     const { findByText, getByText } = renderWithAuth(
       <ProfileScreen navigation={navigationStub} route={routeStub} />,
     );
 
-    expect(await findByText(`${USER.firstName} ${USER.lastName}`)).toBeTruthy();
-    expect(getByText(USER.username)).toBeTruthy();
-    expect(getByText(USER.email)).toBeTruthy();
+    expect(await findByText(`Hi, ${USER.firstName} ${USER.lastName}!`)).toBeTruthy();
     expect(getByText('Logout')).toBeTruthy();
   });
 
@@ -74,6 +72,17 @@ describe('ProfileScreen', () => {
 
     const logoutButton = await findByText('Logout');
     fireEvent.press(logoutButton);
+
+    await waitFor(() => expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled());
+  });
+
+  it('clears the secure token when the back arrow is pressed', async () => {
+    const { findByTestId } = renderWithAuth(
+      <ProfileScreen navigation={navigationStub} route={routeStub} />,
+    );
+
+    const backArrow = await findByTestId('back-arrow');
+    fireEvent.press(backArrow);
 
     await waitFor(() => expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled());
   });
@@ -98,7 +107,7 @@ describe('ProfileScreen', () => {
     const retry = await findByText('Retry');
     fireEvent.press(retry);
 
-    expect(await findByText(`${USER.firstName} ${USER.lastName}`)).toBeTruthy();
+    expect(await findByText(`Hi, ${USER.firstName} ${USER.lastName}!`)).toBeTruthy();
     (console.error as jest.Mock).mockRestore();
   });
 });

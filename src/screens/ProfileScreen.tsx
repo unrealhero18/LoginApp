@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import BackIcon from '@/assets/icons/back.svg';
 
 import { AppText } from '@/components/common/AppText';
-import { PrimaryButton } from '@/components/common/Button';
+import { PrimaryButton, SecondaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { ErrorMessages, AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
@@ -13,22 +16,24 @@ import { AppStackParamList } from '@/navigation/RootNavigator';
 
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
+import { Typography } from '@/theme/typography';
 
 type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
 
-const AVATAR_SIZE = 96;
-
 export default function ProfileScreen(_: Props) {
+  const insets = useSafeAreaInsets();
   const { logout } = useAuth();
   const { data, isError, isFetching, isLoading, refetch } = useProfile();
 
-  if (!data) {
-    // `isFetching` is checked before `isError` so a Retry-triggered refetch
-    // shows a spinner instead of leaving the user on the error screen with no
-    // visual feedback (TanStack keeps `isError` true until the refetch settles).
-    if (isFetching || isLoading) {
+  const containerStyle = useMemo(
+    () => [styles.container, { paddingTop: insets.top + Spacing.md }],
+    [insets.top],
+  );
+
+  const renderContent = () => {
+    if ((isLoading || isFetching) && !data) {
       return (
-        <View style={styles.container}>
+        <View style={styles.centred}>
           <ActivityIndicator color={Colors.primary} />
         </View>
       );
@@ -36,55 +41,60 @@ export default function ProfileScreen(_: Props) {
 
     if (isError) {
       return (
-        <View style={styles.container}>
+        <View style={styles.centred}>
           <ErrorMessage message={ErrorMessages.PROFILE_FAILURE} testID="profile-error" />
           <PrimaryButton title={AuthMessages.RETRY_BUTTON} onPress={() => refetch()} />
         </View>
       );
     }
 
-    return null;
-  }
+    if (!data) {
+      return null;
+    }
 
-  return (
-    <View style={styles.container}>
-      <Image source={{ uri: data.image }} style={styles.avatar} />
-      <AppText fontWeight="600" style={styles.name}>
-        {data.firstName} {data.lastName}
-      </AppText>
-      <AppText style={styles.meta}>{data.username}</AppText>
-      <AppText style={styles.meta}>{data.email}</AppText>
+    return (
+      <>
+        <View style={styles.topRow}>
+          <Pressable onPress={() => logout()} testID="back-arrow" hitSlop={8}>
+            <BackIcon width={24} height={24} />
+          </Pressable>
+          <AppText fontWeight="600" style={styles.greeting}>
+            Hi, {data.firstName} {data.lastName}!
+          </AppText>
+          <View style={styles.spacer} />
+        </View>
+        <SecondaryButton title={AuthMessages.LOGOUT_BUTTON} onPress={() => logout()} />
+      </>
+    );
+  };
 
-      <View style={styles.actions}>
-        <PrimaryButton title={AuthMessages.LOGOUT_BUTTON} onPress={() => logout()} />
-      </View>
-    </View>
-  );
+  return <View style={containerStyle}>{renderContent()}</View>;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: Spacing.screenPadding,
+    justifyContent: 'flex-start',
+    backgroundColor: Colors.GRAY_LIGHT,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  centred: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: Colors.GRAY_LIGHT,
-    marginBottom: Spacing.lg,
+  greeting: {
+    fontSize: Typography.size.lg,
+    color: Colors.INK,
+    flex: 1,
+    textAlign: 'center',
   },
-  name: {
-    marginBottom: Spacing.sm,
-  },
-  meta: {
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  actions: {
-    width: '100%',
-    marginTop: Spacing.xl,
+  spacer: {
+    width: 24,
   },
 });

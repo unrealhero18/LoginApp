@@ -26,9 +26,11 @@ export type RootStackParamList = AuthStackParamList & AppStackParamList;
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 
+const screenOptions = { headerShown: false };
+
 function AuthNavigator() {
   return (
-    <AuthStack.Navigator initialRouteName={Routes.HOME}>
+    <AuthStack.Navigator initialRouteName={Routes.HOME} screenOptions={screenOptions}>
       <AuthStack.Screen name={Routes.HOME} component={HomeScreen} />
       <AuthStack.Screen name={Routes.LOGIN} component={LoginScreen} />
     </AuthStack.Navigator>
@@ -37,7 +39,7 @@ function AuthNavigator() {
 
 function AppNavigator() {
   return (
-    <AppStack.Navigator initialRouteName={Routes.PROFILE}>
+    <AppStack.Navigator initialRouteName={Routes.PROFILE} screenOptions={screenOptions}>
       <AppStack.Screen name={Routes.PROFILE} component={ProfileScreen} />
     </AppStack.Navigator>
   );
