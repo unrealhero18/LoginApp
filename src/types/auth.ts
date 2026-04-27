@@ -6,7 +6,6 @@ export type LoginPayload = {
 
 export type AuthToken = {
   accessToken: string;
-  refreshToken: string;
   id: number;
   expiresInMins?: number;
 };

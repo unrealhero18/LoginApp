@@ -21,10 +21,6 @@ export function useHydration(
 ): {
   retryHydration: () => void;
 } {
-  // HOOK INPUTS: We intentionally omit the setter arguments from dependencies.
-  // Since they are passed from the parent, omitting them ensures hydrate
-  // remains stable even if the parent passes non-memoized functions.
-  // State setters from useState are guaranteed stable by React.
   const hydrate = useCallback(
     async (cancelledRef?: { value: boolean }): Promise<void> => {
       let stored: AuthToken | null = null;
@@ -65,9 +61,6 @@ export function useHydration(
             clearError,
           );
         }
-        // Note: We omit Alert.alert here because the app hasn't rendered yet.
-        // Silently dropping to the login screen is less jarring than a popup
-        // before the first frame.
         setIsHydrating(false);
         return;
       }
@@ -103,7 +96,6 @@ export function useHydration(
             );
           }
         } else {
-          // Network failure — device is offline; keep token for retry
           logger.info(
             '[AuthProvider] getMe failed with network error; staying offline',
             error,
@@ -116,15 +108,11 @@ export function useHydration(
         }
       }
     },
-    // We omit queryClient and the setter arguments to maintain reference stability.
-    // queryClient is stable (same instance for the provider lifetime); setters are
-    // guaranteed stable by React. (Project Rule: HOOK INPUTS)
+    // @hook-deps: See RULES.md#hook-dependency-omission
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
-  // useCallback is intentional: retryHydration is part of the context value
-  // useMemo — stable ref prevents unnecessary consumer re-renders.
   const retryHydration = useCallback((): void => {
     setIsHydrating(true);
     setIsOffline(false);

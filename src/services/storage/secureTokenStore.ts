@@ -15,7 +15,6 @@ function isAuthToken(value: unknown): value is AuthToken {
   return (
     typeof obj.accessToken === 'string' &&
     obj.accessToken.length > 0 &&
-    typeof obj.refreshToken === 'string' &&
     typeof obj.id === 'number' &&
     Number.isFinite(obj.id) &&
     obj.id > 0

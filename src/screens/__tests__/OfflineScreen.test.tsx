@@ -48,7 +48,7 @@ describe('OfflineScreen', () => {
   it('renders the session-saved message when a token exists', () => {
     jest.mocked(useAuth).mockReturnValue(
       makeAuthValue({
-        token: { accessToken: 'abc', refreshToken: 'def', id: 1 },
+        token: { accessToken: 'abc', id: 1 },
       }),
     );
     const { getByText } = render(<OfflineScreen />);

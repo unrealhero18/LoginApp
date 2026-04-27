@@ -1,4 +1,4 @@
-import { TOKEN_EXPIRES_IN_MINS } from '@/constants/auth';
+import { TOKEN_EXPIRES_IN_MINS } from '@/constants/env';
 import { apiFetch } from '@/services/api/client';
 
 import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
@@ -7,7 +7,7 @@ import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
  * Sends a login request to the API.
  *
  * @param payload - The login credentials (username and password).
- * @returns A promise that resolves to the authentication token (accessToken and refreshToken).
+ * @returns A promise that resolves to the authentication token (accessToken).
  * @throws {ApiError} If the login request fails.
  */
 export async function login(payload: LoginPayload): Promise<AuthToken> {
