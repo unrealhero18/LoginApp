@@ -27,7 +27,7 @@ function isAuthToken(value: unknown): value is AuthToken {
  * `WHEN_UNLOCKED_THIS_DEVICE_ONLY` prevents the token from being included in
  * iCloud Keychain backups or restored to a different device.
  *
- * @param token - The AuthToken object containing access and refresh tokens.
+ * @param token - The AuthToken object containing the access token and user info.
  * @throws {Error} If saving to the keychain fails.
  */
 export async function saveToken(token: AuthToken): Promise<void> {

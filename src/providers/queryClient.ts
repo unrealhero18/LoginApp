@@ -27,29 +27,16 @@ const handleError = (error: unknown): void => {
 };
 
 /**
- * Configures default options for queries and mutations.
- * Adjusts settings like retry logic and cache times based on the environment.
- */
-const getQueryOptions = () => {
-  // Time constants in milliseconds
-  // In tests, we disable caching to ensure test isolation
-  const STALE_TIME = IS_TEST ? 0 : 1000 * 60 * 5; // 5 minutes
-  const GC_TIME = IS_TEST ? 0 : 1000 * 60 * 30; // 30 minutes
-
-  return {
-    retry: IS_TEST ? 0 : 2, // Retry failed queries twice in production
-    staleTime: STALE_TIME,
-    gcTime: GC_TIME,
-  };
-};
-
-/**
  * Global QueryClient instance for the application.
  * Includes centralized error handling for all queries and mutations.
  */
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: getQueryOptions(),
+    queries: {
+      retry: IS_TEST ? 0 : 2,
+      staleTime: IS_TEST ? 0 : 1000 * 60 * 5, // 5 minutes
+      gcTime: IS_TEST ? 0 : 1000 * 60 * 30, // 30 minutes
+    },
     mutations: {
       retry: 0, // Don't retry mutations by default (to avoid duplicate side effects)
     },
