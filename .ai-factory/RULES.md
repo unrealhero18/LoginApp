@@ -65,7 +65,8 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 - Global/shared styles live in `src/theme/styles.ts`.
 - All colors must be imported from `src/theme/colors.ts` — raw hex strings (e.g. `'#338BFF'`) are forbidden in component and screen files.
 - Spacing, font sizes, border radii, and other numeric design tokens belong in `src/theme/` — no magic numbers in component files.
-- Dark mode support via `useColorScheme` and React Navigation theme tokens.
+- Dark mode is currently out of scope for v1; the app uses a unified premium light theme.
+
 
 ## Testing
 
@@ -86,6 +87,13 @@ Coding rules and conventions for LoginApp. These apply to all code written in th
 - **NO PREMATURE OPTIMIZATION**: Avoid using `useCallback` or `useMemo` unless there is a measured performance bottleneck or a specific requirement for reference stability (e.g., dependencies of other hooks or `React.memo` components).
   - In most cases, the overhead of dependency tracking in these hooks exceeds the cost of re-creating small functions or objects.
   - If the consumer of a hook passes non-memoized functions (like inline arrows), `useCallback`/`useMemo` inside the hook are useless and should be avoided.
+
+### Hook Dependency Omission
+
+When a hook receives stability-guaranteed functions (like `useState` setters or a stable `queryClient`) from its parent, these may be intentionally omitted from `useCallback`/`useEffect` dependency arrays to ensure the hook's own reference stability.
+
+- **Rule**: If a dependency is omitted for stability, you MUST add a comment: `// @hook-deps: See RULES.md#hook-dependency-omission` followed by `// eslint-disable-next-line react-hooks/exhaustive-deps`.
+- **Rationale**: State setters from `useState` are guaranteed stable by React. Omitting them prevents the current hook from re-creating if the parent component re-renders and passes a new (non-memoized) wrapper around the same setter.
 
 ## Commits
 

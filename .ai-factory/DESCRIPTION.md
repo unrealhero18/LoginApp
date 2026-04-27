@@ -8,7 +8,7 @@ LoginApp is a state-of-the-art React Native application focused on providing a p
 - **Dynamic Profile Management**: User profile fetching and display with real-time updates via React Query.
 - **Accessibility First**: Comprehensive support for screen readers with proper roles, labels, and interaction states.
 - **Premium Design System**: 
-  - Dynamic dark mode support.
+  - Consistent semantic color system.
   - Glassmorphism and rich gradients.
   - Consistent spacing and typography tokens.
   - Smooth micro-animations for interactive elements.
