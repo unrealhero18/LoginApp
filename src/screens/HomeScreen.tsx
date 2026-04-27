@@ -6,7 +6,7 @@ import { PrimaryButton } from '@/components/common/Button';
 import { AuthMessages } from '@/constants/messages';
 import { Routes } from '@/constants/routes';
 import { AuthStackParamList } from '@/navigation/RootNavigator';
-import { Spacing } from '@/theme/spacing';
+import { globalStyles } from '@/theme/styles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, Routes.HOME>;
 
@@ -23,8 +23,7 @@ export default function HomeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingHorizontal: Spacing.screenPadding,
+    ...globalStyles.screenContainer,
     justifyContent: 'center',
   },
 });
