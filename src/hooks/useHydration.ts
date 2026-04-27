@@ -19,9 +19,10 @@ export function useHydration(
 ): {
   retryHydration: () => void;
 } {
-  // useCallback with [] is intentional: state setters are guaranteed stable by
-  // React, so hydrate itself is stable — required as a dep of the startup effect
-  // and retryHydration.
+  // HOOK INPUTS: We intentionally omit the setter arguments from dependencies.
+  // Since they are passed from the parent, omitting them ensures hydrate
+  // remains stable even if the parent passes non-memoized functions.
+  // State setters from useState are guaranteed stable by React.
   const hydrate = useCallback(
     async (cancelledRef?: { value: boolean }): Promise<void> => {
       let stored: AuthToken | null = null;
@@ -112,8 +113,9 @@ export function useHydration(
           setIsHydrating(false);
         }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
+    // We omit the setter arguments to maintain reference stability (Project Rule: HOOK INPUTS)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

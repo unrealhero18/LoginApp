@@ -6,11 +6,11 @@ import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { Input } from '@/components/common/Input';
 import { AuthMessages } from '@/constants/messages';
 import { useForm } from '@/hooks';
+import { Spacing } from '@/theme/spacing';
 import { getLoginErrorMessage } from '@/utils/error';
 import { validateLogin } from '@/utils/validation';
-import type { LoginPayload } from '@/types/auth';
 
-import { Spacing } from '@/theme/spacing';
+import type { LoginPayload } from '@/types/auth';
 
 type LoginFormProps = {
   error: Error | null;

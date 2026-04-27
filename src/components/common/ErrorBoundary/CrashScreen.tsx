@@ -4,7 +4,6 @@ import { View } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { PrimaryButton } from '@/components/common/Button';
 import { ErrorBoundaryMessages } from '@/constants/messages';
-import { logger } from '@/utils/logger';
 
 import { styles } from './CrashScreen.styles';
 
