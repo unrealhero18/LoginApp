@@ -37,7 +37,7 @@ export async function saveToken(token: AuthToken): Promise<void> {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
   } catch (error) {
-    logger.error('[secureTokenStore] failed to save token', error);
+    logger.error('[tokenStorage] failed to save token', error);
     throw error;
   }
 }
@@ -58,13 +58,13 @@ export async function loadToken(): Promise<AuthToken | null> {
     const parsed: unknown = JSON.parse(credentials.password);
 
     if (!isAuthToken(parsed)) {
-      logger.info('[secureTokenStore] stored token failed schema validation');
+      logger.info('[tokenStorage] stored token failed schema validation');
       return null;
     }
 
     return parsed;
   } catch (error) {
-    logger.error('[secureTokenStore] failed to load token', error);
+    logger.error('[tokenStorage] failed to load token', error);
     return null;
   }
 }
@@ -78,7 +78,7 @@ export async function clearToken(): Promise<void> {
   try {
     await Keychain.resetGenericPassword({ service: SERVICE });
   } catch (error) {
-    logger.error('[secureTokenStore] failed to clear token', error);
+    logger.error('[tokenStorage] failed to clear token', error);
     throw error;
   }
 }

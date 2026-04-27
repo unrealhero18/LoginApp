@@ -2,7 +2,7 @@ import React, { forwardRef, useEffect, useState } from 'react';
 import { TextInput, TextInputProps, View } from 'react-native';
 
 import { logger } from '@/utils/logger';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 import { styles } from './Input.styles';
 import { InputClearButton } from './InputClearButton';

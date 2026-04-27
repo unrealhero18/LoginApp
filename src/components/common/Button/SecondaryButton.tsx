@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
-import { AppText } from '@/components/common/AppText';
+import { AppText } from '@/components/common/AppText/AppText';
 import { ButtonBase } from '@/components/common/Button/ButtonBase';
 import { Colors } from '@/theme/colors';
 import { Typography } from '@/theme/typography';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 type Props = {
   accessibilityHint?: string;

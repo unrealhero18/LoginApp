@@ -7,7 +7,7 @@ import { ErrorMessages } from '@/constants/messages';
 import { QUERY_KEYS } from '@/constants/queryKeys';
 import { getMe } from '@/services/api/auth';
 import { ApiError, setAuthToken } from '@/services/api/client';
-import { clearToken, loadToken } from '@/services/storage/secureTokenStore';
+import { clearToken, loadToken } from '@/services/storage/token';
 import { isTokenExpired } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
 

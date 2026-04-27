@@ -2,12 +2,12 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import { AppText } from '@/components/common/AppText';
+import { AppText } from '@/components/common/AppText/AppText';
 import { ButtonBase } from '@/components/common/Button/ButtonBase';
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
 import { Typography } from '@/theme/typography';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 type Props = {
   accessibilityHint?: string;

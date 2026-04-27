@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 
 import { login as loginRequest } from '@/services/api/auth';
 import { setAuthToken } from '@/services/api/client';
-import { clearToken, saveToken } from '@/services/storage/secureTokenStore';
+import { clearToken, saveToken } from '@/services/storage/token';
 import { logger } from '@/utils/logger';
 
 import type { AuthToken, LoginPayload } from '@/types/auth';

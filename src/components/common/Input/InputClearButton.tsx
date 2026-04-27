@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 
 import CloseIcon from '@/assets/icons/close.svg';
 import { globalStyles } from '@/theme/styles';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 import { styles } from './Input.styles';
 

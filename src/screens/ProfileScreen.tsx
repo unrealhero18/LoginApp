@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BackIcon from '@/assets/icons/back.svg';
-import { AppText } from '@/components/common/AppText';
+import { AppText } from '@/components/common/AppText/AppText';
 import { PrimaryButton, SecondaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { ErrorMessages, AuthMessages } from '@/constants/messages';
@@ -16,7 +16,7 @@ import { Spacing } from '@/theme/spacing';
 import { globalStyles } from '@/theme/styles';
 import { Typography } from '@/theme/typography';
 import { interpolate } from '@/utils/string';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
 
