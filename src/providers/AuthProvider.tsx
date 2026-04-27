@@ -7,7 +7,7 @@ import { useTokenExpiry } from '@/hooks/useTokenExpiry';
 import { useUnauthorizedHandler } from '@/hooks/useUnauthorizedHandler';
 import { AuthContext, type AuthContextValue } from '@/providers/authContext';
 
-import type { AuthToken, AuthUser } from '@/types/auth';
+import type { AuthToken } from '@/types/auth';
 
 export type { AuthContextValue } from '@/providers/authContext';
 export { AuthContext } from '@/providers/authContext';
@@ -18,16 +18,15 @@ type Props = {
 
 export function AuthProvider({ children }: Props) {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<AuthToken | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
   const tokenRef = useRef<AuthToken | null>(null);
   tokenRef.current = token;
 
-  const { login, logout } = useAuthActions(queryClient, setUser, setToken);
+  const { login, logout } = useAuthActions(queryClient, setToken);
   const { retryHydration } = useHydration(
-    setUser,
+    queryClient,
     setToken,
     setIsHydrating,
     setIsOffline,
@@ -39,7 +38,6 @@ export function AuthProvider({ children }: Props) {
   // AuthProvider render when the context value hasn't changed.
   const value = useMemo<AuthContextValue>(
     () => ({
-      user,
       token,
       isHydrating,
       isOffline,
@@ -47,7 +45,7 @@ export function AuthProvider({ children }: Props) {
       logout,
       retryHydration,
     }),
-    [user, token, isHydrating, isOffline, login, logout, retryHydration],
+    [token, isHydrating, isOffline, login, logout, retryHydration],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

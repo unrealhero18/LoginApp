@@ -7,7 +7,7 @@ import { AuthProvider } from '@/providers/AuthProvider';
 import * as authService from '@/services/api/auth';
 import { createTestQueryClient } from '@/test-utils/renderWithAuth';
 
-import type { AuthToken, AuthUser } from '@/types/auth';
+import type { AuthToken } from '@/types/auth';
 
 jest.mock('@/services/api/auth');
 jest.mock('@/services/api/client', () => {
@@ -27,15 +27,6 @@ const TOKEN: AuthToken = {
   accessToken: 'access-1',
   refreshToken: 'refresh-1',
   id: 1,
-};
-
-const USER: AuthUser = {
-  id: 1,
-  username: 'emily',
-  email: 'emily@example.com',
-  firstName: 'Emily',
-  lastName: 'Johnson',
-  image: 'https://dummyjson.com/icon/emilyjohnson.png',
 };
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -60,7 +51,6 @@ describe('useLogin', () => {
 
   it('marks pending while login is in flight and clears it on success', async () => {
     mockedAuth.login.mockResolvedValue(TOKEN);
-    mockedAuth.getMe.mockResolvedValue(USER);
 
     const { result } = renderHook(() => useLogin(), { wrapper });
 
@@ -73,6 +63,7 @@ describe('useLogin', () => {
       username: 'emily',
       password: 'secret',
     });
+    expect(mockedAuth.getMe).not.toHaveBeenCalled();
   });
 
   it('exposes error when the underlying login fails', async () => {

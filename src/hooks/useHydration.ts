@@ -1,18 +1,20 @@
 import NetInfo from '@react-native-community/netinfo';
+import { type QueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
 
 import { ErrorMessages } from '@/constants/messages';
+import { QUERY_KEYS } from '@/constants/queryKeys';
 import { getMe } from '@/services/api/auth';
 import { ApiError, setAuthToken } from '@/services/api/client';
 import { clearToken, loadToken } from '@/services/storage/secureTokenStore';
 import { isTokenExpired } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
 
-import type { AuthToken, AuthUser } from '@/types/auth';
+import type { AuthToken } from '@/types/auth';
 
 export function useHydration(
-  setUser: (user: AuthUser | null) => void,
+  queryClient: QueryClient,
   setToken: (token: AuthToken | null) => void,
   setIsHydrating: (value: boolean) => void,
   setIsOffline: (value: boolean) => void,
@@ -76,8 +78,8 @@ export function useHydration(
         const profile = await getMe();
         if (cancelledRef?.value) return;
 
+        queryClient.setQueryData(QUERY_KEYS.profile, profile);
         setToken(stored);
-        setUser(profile);
       } catch (error) {
         if (cancelledRef?.value) return;
 
@@ -114,7 +116,9 @@ export function useHydration(
         }
       }
     },
-    // We omit the setter arguments to maintain reference stability (Project Rule: HOOK INPUTS)
+    // We omit queryClient and the setter arguments to maintain reference stability.
+    // queryClient is stable (same instance for the provider lifetime); setters are
+    // guaranteed stable by React. (Project Rule: HOOK INPUTS)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );

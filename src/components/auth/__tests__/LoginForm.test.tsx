@@ -4,7 +4,6 @@ import React from 'react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { ErrorMessages } from '@/constants/messages';
 import { ApiError } from '@/services/api/client';
-import { LoginProfileFetchError } from '@/utils/error';
 
 describe('LoginForm', () => {
   const mockOnSubmit = jest.fn();
@@ -123,17 +122,4 @@ describe('LoginForm', () => {
     expect(getByText(ErrorMessages.LOGIN_FAILURE)).toBeTruthy();
   });
 
-  it('renders LOGIN_PROFILE_FAILURE copy when the post-login profile fetch fails', () => {
-    const { getByText, queryByText } = render(
-      <LoginForm
-        onSubmit={mockOnSubmit}
-        isLoading={false}
-        error={new LoginProfileFetchError(new Error('boom'))}
-        onResetError={mockOnResetError}
-      />,
-    );
-
-    expect(getByText(ErrorMessages.LOGIN_PROFILE_FAILURE)).toBeTruthy();
-    expect(queryByText(ErrorMessages.LOGIN_FAILURE)).toBeNull();
-  });
 });

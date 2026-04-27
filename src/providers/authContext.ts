@@ -1,9 +1,8 @@
 import { createContext } from 'react';
 
-import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+import type { AuthToken, LoginPayload } from '@/types/auth';
 
 export type AuthContextValue = {
-  user: AuthUser | null;
   token: AuthToken | null;
   isHydrating: boolean;
   isOffline: boolean;

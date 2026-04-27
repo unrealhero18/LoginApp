@@ -18,7 +18,6 @@ function makeAuthValue(
   overrides: Partial<AuthContextValue> = {},
 ): AuthContextValue {
   return {
-    user: null,
     token: null,
     isHydrating: false,
     isOffline: true,
