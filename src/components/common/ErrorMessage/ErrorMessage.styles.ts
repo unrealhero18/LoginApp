@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
+import { Typography } from '@/theme/typography';
 
 export const styles = StyleSheet.create({
   container: {
@@ -18,7 +19,7 @@ export const styles = StyleSheet.create({
   message: {
     flex: 1,
     color: Colors.WHITE,
-    fontSize: 14,
+    fontSize: Typography.size.sm,
     fontWeight: '500',
   },
 });
