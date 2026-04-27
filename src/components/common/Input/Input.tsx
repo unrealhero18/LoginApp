@@ -89,8 +89,8 @@ export const Input = forwardRef<TextInput, InputProps>(
             onChangeText={onChangeText}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            accessibilityLabel={label}
-            accessibilityHint={errorMessage}
+            accessibilityLabel={errorMessage ? `${label}, ${errorMessage}` : label}
+            aria-invalid={hasError}
             {...rest}
           />
 
