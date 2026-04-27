@@ -13,6 +13,7 @@ export const AuthMessages = {
   LOGOUT_BUTTON: 'Logout',
   RETRY_BUTTON: 'Retry',
   GO_TO_LOGIN_BUTTON: 'Go to login',
+  PROFILE_GREETING: 'Hi, {firstName} {lastName}!',
 } as const;
 
 export const ValidationMessages = {

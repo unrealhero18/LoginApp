@@ -12,7 +12,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { Routes } from '@/constants/routes';
 import { useLogin } from '@/hooks';
 import { AuthStackParamList } from '@/navigation/RootNavigator';
-import { Spacing } from '@/theme/spacing';
+import { globalStyles } from '@/theme/styles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, Routes.LOGIN>;
 
@@ -38,8 +38,7 @@ export default function LoginScreen(_: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingHorizontal: Spacing.screenPadding,
+    ...globalStyles.screenContainer,
     justifyContent: 'center',
   },
 });

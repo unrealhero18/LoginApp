@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    color: Colors.WHITE,
+    color: Colors.textContrast,
     fontSize: Typography.size.sm,
     fontWeight: '500',
   },

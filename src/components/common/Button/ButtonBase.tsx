@@ -10,7 +10,7 @@ import {
 
 import { Spacing } from '@/theme/spacing';
 import { globalStyles } from '@/theme/styles';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 type Props = {
   accessibilityHint?: string;

@@ -15,7 +15,6 @@ function isAuthToken(value: unknown): value is AuthToken {
   return (
     typeof obj.accessToken === 'string' &&
     obj.accessToken.length > 0 &&
-    typeof obj.refreshToken === 'string' &&
     typeof obj.id === 'number' &&
     Number.isFinite(obj.id) &&
     obj.id > 0
@@ -28,7 +27,7 @@ function isAuthToken(value: unknown): value is AuthToken {
  * `WHEN_UNLOCKED_THIS_DEVICE_ONLY` prevents the token from being included in
  * iCloud Keychain backups or restored to a different device.
  *
- * @param token - The AuthToken object containing access and refresh tokens.
+ * @param token - The AuthToken object containing the access token and user info.
  * @throws {Error} If saving to the keychain fails.
  */
 export async function saveToken(token: AuthToken): Promise<void> {
@@ -38,7 +37,7 @@ export async function saveToken(token: AuthToken): Promise<void> {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
   } catch (error) {
-    logger.error('[secureTokenStore] failed to save token', error);
+    logger.error('[tokenStorage] failed to save token', error);
     throw error;
   }
 }
@@ -59,13 +58,13 @@ export async function loadToken(): Promise<AuthToken | null> {
     const parsed: unknown = JSON.parse(credentials.password);
 
     if (!isAuthToken(parsed)) {
-      logger.info('[secureTokenStore] stored token failed schema validation');
+      logger.info('[tokenStorage] stored token failed schema validation');
       return null;
     }
 
     return parsed;
   } catch (error) {
-    logger.error('[secureTokenStore] failed to load token', error);
+    logger.error('[tokenStorage] failed to load token', error);
     return null;
   }
 }
@@ -79,7 +78,7 @@ export async function clearToken(): Promise<void> {
   try {
     await Keychain.resetGenericPassword({ service: SERVICE });
   } catch (error) {
-    logger.error('[secureTokenStore] failed to clear token', error);
+    logger.error('[tokenStorage] failed to clear token', error);
     throw error;
   }
 }

@@ -2,6 +2,7 @@ import { focusManager, onlineManager } from '@tanstack/react-query';
 import { act, cleanup } from '@testing-library/react-native';
 
 import { queryClient } from '@/providers/queryClient';
+import { resetApiState } from '@/services/api/client';
 
 // --- Mocks ---
 jest.mock('react-native-screens', () => ({
@@ -109,4 +110,5 @@ afterEach(async () => {
   jest.useRealTimers();
   jest.clearAllMocks();
   jest.restoreAllMocks();
+  resetApiState();
 });

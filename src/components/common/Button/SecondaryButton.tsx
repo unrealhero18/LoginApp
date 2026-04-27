@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
-import { AppText } from '@/components/common/AppText';
+import { AppText } from '@/components/common/AppText/AppText';
 import { ButtonBase } from '@/components/common/Button/ButtonBase';
 import { Colors } from '@/theme/colors';
 import { Typography } from '@/theme/typography';
-import { cn } from '@/utils/styles';
+import { cn } from '@/utils/style';
 
 type Props = {
   accessibilityHint?: string;
@@ -28,7 +28,7 @@ export function SecondaryButton({
       accessibilityLabel={accessibilityLabel || title}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => cn(styles, 'background', { pressed })}
+      style={({ pressed }) => cn(styles, 'background', { pressed, disabled })}
     >
       <AppText fontWeight="500" style={styles.label}>
         {title}
@@ -39,16 +39,17 @@ export function SecondaryButton({
 
 const styles = StyleSheet.create({
   background: {
-    backgroundColor: Colors.WHITE,
+    backgroundColor: Colors.surface,
   },
   pressed: {
-    backgroundColor: Colors.GRAY,
+    backgroundColor: Colors.backgroundSecondary,
   },
+  disabled: {},
   label: {
     fontSize: Typography.size.md,
     lineHeight: Typography.size.md * Typography.lineHeight.normal,
     letterSpacing: 0,
     textAlign: 'center',
-    color: Colors.INK,
+    color: Colors.text,
   },
 });

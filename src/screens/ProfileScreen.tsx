@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BackIcon from '@/assets/icons/back.svg';
-import { AppText } from '@/components/common/AppText';
+import { AppText } from '@/components/common/AppText/AppText';
 import { PrimaryButton, SecondaryButton } from '@/components/common/Button';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { ErrorMessages, AuthMessages } from '@/constants/messages';
@@ -15,7 +15,8 @@ import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
 import { globalStyles } from '@/theme/styles';
 import { Typography } from '@/theme/typography';
-import { cn } from '@/utils/styles';
+import { interpolate } from '@/utils/string';
+import { cn } from '@/utils/style';
 
 type Props = NativeStackScreenProps<AppStackParamList, Routes.PROFILE>;
 
@@ -29,17 +30,19 @@ export default function ProfileScreen(_: Props) {
     [insets.top],
   );
 
-  const renderContent = () => {
-    if ((isLoading || isFetching) && !data) {
-      return (
+  if ((isLoading || isFetching) && !data) {
+    return (
+      <View style={containerStyle}>
         <View style={styles.centred}>
           <ActivityIndicator color={Colors.primary} />
         </View>
-      );
-    }
+      </View>
+    );
+  }
 
-    if (isError) {
-      return (
+  if (isError) {
+    return (
+      <View style={containerStyle}>
         <View style={styles.centred}>
           <ErrorMessage
             message={ErrorMessages.PROFILE_FAILURE}
@@ -50,48 +53,51 @@ export default function ProfileScreen(_: Props) {
             onPress={() => refetch()}
           />
         </View>
-      );
-    }
-
-    if (!data) {
-      return null;
-    }
-
-    return (
-      <>
-        <View style={styles.topRow}>
-          <Pressable
-            accessibilityLabel="Back"
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => logout()}
-            style={({ pressed }) => cn([globalStyles, styles], 'backButton', { pressed })}
-            testID="back-arrow"
-          >
-            <BackIcon width={24} height={24} />
-          </Pressable>
-          <AppText fontWeight="600" style={styles.greeting}>
-            Hi, {data.firstName} {data.lastName}!
-          </AppText>
-          <View style={styles.spacer} />
-        </View>
-        <SecondaryButton
-          title={AuthMessages.LOGOUT_BUTTON}
-          onPress={() => logout()}
-        />
-      </>
+      </View>
     );
-  };
+  }
 
-  return <View style={containerStyle}>{renderContent()}</View>;
+  if (!data) {
+    return null;
+  }
+
+  const greeting = interpolate(AuthMessages.PROFILE_GREETING, {
+    firstName: data.firstName,
+    lastName: data.lastName,
+  });
+
+  return (
+    <View style={containerStyle}>
+      <View style={styles.topRow}>
+        <Pressable
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => logout()}
+          style={({ pressed }) =>
+            cn([globalStyles, styles], 'backButton', { pressed })
+          }
+          testID="back-arrow"
+        >
+          <BackIcon width={24} height={24} />
+        </Pressable>
+        <AppText fontWeight="600" style={styles.greeting}>
+          {greeting}
+        </AppText>
+        <View style={styles.spacer} />
+      </View>
+      <SecondaryButton
+        title={AuthMessages.LOGOUT_BUTTON}
+        onPress={() => logout()}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingHorizontal: Spacing.screenPadding,
+    ...globalStyles.screenContainer,
     justifyContent: 'flex-start',
-    backgroundColor: Colors.GRAY_LIGHT,
   },
   topRow: {
     flexDirection: 'row',
@@ -105,7 +111,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: Typography.size.lg,
-    color: Colors.INK,
+    color: Colors.text,
     flex: 1,
     textAlign: 'center',
   },

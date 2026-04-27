@@ -7,6 +7,7 @@ import { OfflineMessages } from '@/constants/messages';
 import { useAuth } from '@/hooks';
 import { Colors } from '@/theme/colors';
 import { Spacing } from '@/theme/spacing';
+import { globalStyles } from '@/theme/styles';
 
 export default function OfflineScreen() {
   const { token, retryHydration } = useAuth();
@@ -33,11 +34,9 @@ export default function OfflineScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingHorizontal: Spacing.screenPadding,
+    ...globalStyles.screenContainer,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
   },
   title: {
     marginBottom: Spacing.md,

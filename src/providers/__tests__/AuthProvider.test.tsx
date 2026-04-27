@@ -40,7 +40,6 @@ const mockedGetTokenExpiryMs = jest.mocked(getTokenExpiryMs);
 
 const TOKEN: AuthToken = {
   accessToken: 'access-1',
-  refreshToken: 'refresh-1',
   id: 1,
 };
 

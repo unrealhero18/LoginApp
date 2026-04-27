@@ -51,8 +51,6 @@ async function safeReadMessage(response: Response): Promise<string> {
 
 /**
  * Updates the access token used for authenticated requests.
- *
- * @param token - The new JWT access token or null to clear it.
  */
 export function setAuthToken(token: string | null): void {
   accessToken = token;
@@ -61,11 +59,17 @@ export function setAuthToken(token: string | null): void {
 /**
  * Sets a callback function to be executed when an unauthorized response (401/403) is received.
  * Used by AuthProvider to trigger a global logout.
- *
- * @param handler - The callback function or null to remove it.
  */
 export function setOnUnauthorized(handler: (() => void) | null): void {
   onUnauthorized = handler;
+}
+
+/**
+ * Resets the module-level state. Used primarily in tests to ensure isolation.
+ */
+export function resetApiState(): void {
+  accessToken = null;
+  onUnauthorized = null;
 }
 
 /**

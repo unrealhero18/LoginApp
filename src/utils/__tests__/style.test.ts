@@ -1,4 +1,4 @@
-import { cn } from '../styles';
+import { cn } from '../style';
 
 describe('cn utility', () => {
   const styles = {

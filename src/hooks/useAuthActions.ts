@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 
 import { login as loginRequest } from '@/services/api/auth';
 import { setAuthToken } from '@/services/api/client';
-import { clearToken, saveToken } from '@/services/storage/secureTokenStore';
+import { clearToken, saveToken } from '@/services/storage/token';
 import { logger } from '@/utils/logger';
 
 import type { AuthToken, LoginPayload } from '@/types/auth';
@@ -29,31 +29,27 @@ export function useAuthActions(
     } catch (error) {
       logger.error('[AuthProvider] failed to clear token on logout', error);
     }
+    // @hook-deps: See RULES.md#hook-dependency-omission
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient]);
 
   // useCallback is intentional: login is part of the context value useMemo —
   // stable ref prevents unnecessary consumer re-renders.
-  const login = useCallback(
-    async (payload: LoginPayload): Promise<void> => {
-      const nextToken = await loginRequest(payload);
+  const login = useCallback(async (payload: LoginPayload): Promise<void> => {
+    const nextToken = await loginRequest(payload);
 
-      setAuthToken(nextToken.accessToken);
+    setAuthToken(nextToken.accessToken);
 
-      try {
-        await saveToken(nextToken);
-      } catch (error) {
-        logger.error(
-          '[AuthProvider] failed to persist token after login',
-          error,
-        );
-      }
+    try {
+      await saveToken(nextToken);
+    } catch (error) {
+      logger.error('[AuthProvider] failed to persist token after login', error);
+    }
 
-      setToken(nextToken);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setToken is a stable useState setter; remaining deps are module-level
-    [],
-  );
+    setToken(nextToken);
+    // @hook-deps: See RULES.md#hook-dependency-omission
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return { login, logout };
 }

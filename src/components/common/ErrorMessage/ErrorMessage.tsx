@@ -2,7 +2,8 @@ import React from 'react';
 import { View } from 'react-native';
 
 import InfoIcon from '@/assets/icons/info.svg';
-import { AppText } from '@/components/common/AppText';
+import { AppText } from '@/components/common/AppText/AppText';
+import { cn } from '@/utils/style';
 
 import { styles } from './ErrorMessage.styles';
 
@@ -18,7 +19,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   if (!message) return null;
 
   return (
-    <View style={styles.container} testID={testID}>
+    <View style={cn(styles, 'container')} testID={testID}>
       <View style={styles.iconContainer}>
         <InfoIcon />
       </View>
