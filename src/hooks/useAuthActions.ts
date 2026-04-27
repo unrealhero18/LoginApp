@@ -1,17 +1,15 @@
 import { type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { getMe, login as loginRequest } from '@/services/api/auth';
+import { login as loginRequest } from '@/services/api/auth';
 import { setAuthToken } from '@/services/api/client';
 import { clearToken, saveToken } from '@/services/storage/secureTokenStore';
-import { LoginProfileFetchError } from '@/utils/error';
 import { logger } from '@/utils/logger';
 
-import type { AuthToken, AuthUser, LoginPayload } from '@/types/auth';
+import type { AuthToken, LoginPayload } from '@/types/auth';
 
 export function useAuthActions(
   queryClient: QueryClient,
-  setUser: (user: AuthUser | null) => void,
   setToken: (token: AuthToken | null) => void,
 ): {
   login: (payload: LoginPayload) => Promise<void>;
@@ -21,7 +19,6 @@ export function useAuthActions(
   // useTokenExpiry effects, and of the context useMemo — stable ref is required.
   const logout = useCallback(async (): Promise<void> => {
     setAuthToken(null);
-    setUser(null);
     setToken(null);
 
     // Clear React Query cache to prevent data leakage between users
@@ -52,30 +49,9 @@ export function useAuthActions(
         );
       }
 
-      try {
-        const profile = await getMe();
-        setToken(nextToken);
-        setUser(profile);
-      } catch (error) {
-        logger.error(
-          '[AuthProvider] profile fetch failed after login; clearing token',
-          error,
-        );
-        setAuthToken(null);
-        // Wrap clearToken in its own try/catch so a Keychain failure here
-        // never masks the original profile-fetch error.
-        try {
-          await clearToken();
-        } catch (clearError) {
-          logger.error(
-            '[AuthProvider] failed to clear token after profile fetch failure',
-            clearError,
-          );
-        }
-        throw new LoginProfileFetchError(error);
-      }
+      setToken(nextToken);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setUser/setToken are stable useState setters; remaining deps are module-level
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setToken is a stable useState setter; remaining deps are module-level
     [],
   );
 

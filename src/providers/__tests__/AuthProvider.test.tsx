@@ -1,4 +1,4 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { AppState, Alert } from 'react-native';
@@ -55,8 +55,9 @@ const USER: AuthUser = {
 
 jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
+let queryClient: QueryClient;
+
 function wrapper({ children }: { children: React.ReactNode }) {
-  const queryClient = createTestQueryClient();
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>{children}</AuthProvider>
@@ -67,6 +68,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('AuthProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    queryClient = createTestQueryClient();
     mockedKeychain.getGenericPassword.mockResolvedValue(false);
     mockedNetInfo.fetch.mockResolvedValue({ isConnected: true });
     mockedIsTokenExpired.mockReturnValue(false);
@@ -78,7 +80,6 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
     expect(result.current.token).toBeNull();
-    expect(result.current.user).toBeNull();
     expect(result.current.isOffline).toBe(false);
   });
 
@@ -106,7 +107,7 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
     expect(mockedClient.setAuthToken).toHaveBeenCalledWith(TOKEN.accessToken);
     expect(result.current.token).toEqual(TOKEN);
-    expect(result.current.user).toEqual(USER);
+    expect(queryClient.getQueryData(['profile'])).toEqual(USER);
   });
 
   it('clears stored token when hydration getMe returns an ApiError', async () => {
@@ -122,7 +123,6 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
     expect(result.current.token).toBeNull();
-    expect(result.current.user).toBeNull();
     expect(result.current.isOffline).toBe(false);
     expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
   });
@@ -144,7 +144,6 @@ describe('AuthProvider', () => {
     expect(mockedKeychain.resetGenericPassword).not.toHaveBeenCalled();
     // Component token state is null because setToken() is only called on success
     expect(result.current.token).toBeNull();
-    expect(result.current.user).toBeNull();
   });
 
   it('retryHydration resets isHydrating, clears isOffline, and resolves session', async () => {
@@ -170,12 +169,11 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
     expect(result.current.isOffline).toBe(false);
     expect(result.current.token).toEqual(TOKEN);
-    expect(result.current.user).toEqual(USER);
+    expect(queryClient.getQueryData(['profile'])).toEqual(USER);
   });
 
-  it('login persists token, fetches profile, and updates state', async () => {
+  it('login persists token and sets token state without calling getMe', async () => {
     mockedAuth.login.mockResolvedValue(TOKEN);
-    mockedAuth.getMe.mockResolvedValue(USER);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
@@ -191,33 +189,12 @@ describe('AuthProvider', () => {
     expect(mockedKeychain.setGenericPassword).toHaveBeenCalled();
     expect(mockedClient.setAuthToken).toHaveBeenCalledWith(TOKEN.accessToken);
     expect(result.current.token).toEqual(TOKEN);
-    expect(result.current.user).toEqual(USER);
-  });
-
-  it('clears token if getMe fails during login', async () => {
-    mockedAuth.login.mockResolvedValue(TOKEN);
-    mockedAuth.getMe.mockRejectedValueOnce(new Error('profile fetch failed'));
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-    await waitFor(() => expect(result.current.isHydrating).toBe(false));
-
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    await act(async () => {
-      await expect(
-        result.current.login({ username: 'emily', password: 'secret' }),
-      ).rejects.toThrow('profile fetch failed');
-    });
-    (console.error as jest.Mock).mockRestore();
-
-    expect(mockedClient.setAuthToken).toHaveBeenLastCalledWith(null);
-    expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
-    expect(result.current.token).toBeNull();
-    expect(result.current.user).toBeNull();
+    expect(mockedAuth.getMe).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(['profile'])).toBeUndefined();
   });
 
   it('logout clears state, token storage, and api client token', async () => {
     mockedAuth.login.mockResolvedValue(TOKEN);
-    mockedAuth.getMe.mockResolvedValue(USER);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.isHydrating).toBe(false));
@@ -233,7 +210,6 @@ describe('AuthProvider', () => {
     expect(mockedClient.setAuthToken).toHaveBeenLastCalledWith(null);
     expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
     expect(result.current.token).toBeNull();
-    expect(result.current.user).toBeNull();
   });
 
   it('registers an unauthorized handler with the api client', async () => {
@@ -318,7 +294,6 @@ describe('AuthProvider', () => {
       expect(mockedKeychain.resetGenericPassword).toHaveBeenCalled();
       expect(mockedAuth.getMe).not.toHaveBeenCalled();
       expect(result.current.token).toBeNull();
-      expect(result.current.user).toBeNull();
     });
 
     it('proceeds normally and restores session when stored token is valid', async () => {
@@ -337,7 +312,7 @@ describe('AuthProvider', () => {
 
       expect(mockedAuth.getMe).toHaveBeenCalled();
       expect(result.current.token).toEqual(TOKEN);
-      expect(result.current.user).toEqual(USER);
+      expect(queryClient.getQueryData(['profile'])).toEqual(USER);
     });
   });
 
@@ -361,7 +336,6 @@ describe('AuthProvider', () => {
 
     it('triggers logout when token is expired on app foreground', async () => {
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isHydrating).toBe(false));
@@ -384,7 +358,6 @@ describe('AuthProvider', () => {
 
     it('does not trigger logout when token is valid on app foreground', async () => {
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isHydrating).toBe(false));
@@ -403,7 +376,6 @@ describe('AuthProvider', () => {
 
     it('does not trigger logout when app transitions to background', async () => {
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isHydrating).toBe(false));
@@ -429,7 +401,6 @@ describe('AuthProvider', () => {
       jest.setSystemTime(BASE_TIME);
 
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
 
       const expiryMs = BASE_TIME + 60_000;
       mockedGetTokenExpiryMs.mockReturnValue(expiryMs);
@@ -456,7 +427,6 @@ describe('AuthProvider', () => {
       jest.setSystemTime(BASE_TIME);
 
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
       mockedGetTokenExpiryMs.mockReturnValue(BASE_TIME - 1_000);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -472,7 +442,6 @@ describe('AuthProvider', () => {
 
     it('does not schedule a timer when getTokenExpiryMs returns null', async () => {
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
       mockedGetTokenExpiryMs.mockReturnValue(null);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -492,7 +461,6 @@ describe('AuthProvider', () => {
 
     it('clears the scheduled timer when logout runs before it fires', async () => {
       mockedAuth.login.mockResolvedValue(TOKEN);
-      mockedAuth.getMe.mockResolvedValue(USER);
       mockedGetTokenExpiryMs.mockReturnValue(Date.now() + 60_000);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -531,8 +499,6 @@ describe('AuthProvider', () => {
       mockedGetTokenExpiryMs
         .mockReturnValueOnce(BASE_TIME + 30_000) // called when TOKEN_A is set
         .mockReturnValueOnce(BASE_TIME + 90_000); // called when TOKEN_B is set
-
-      mockedAuth.getMe.mockResolvedValue(USER);
 
       // First login → TOKEN_A
       mockedAuth.login.mockResolvedValueOnce(TOKEN_A);
