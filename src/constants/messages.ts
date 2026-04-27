@@ -32,3 +32,10 @@ export const OfflineMessages = {
     'An internet connection is required to continue. Please connect and tap Reconnect.',
   RECONNECT_BUTTON: 'Reconnect',
 } as const;
+
+export const ErrorBoundaryMessages = {
+  CRASH_TITLE: 'Oops, Something Went Wrong',
+  CRASH_MESSAGE:
+    'The app encountered an unexpected error. Don’t worry, your data is safe. Please tap the button below to restart the app.',
+  CRASH_RETRY_BUTTON: 'Restart App',
+} as const;

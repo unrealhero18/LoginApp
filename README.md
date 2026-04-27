@@ -48,6 +48,7 @@ _See [Auth Flow](docs/auth-flow.md#test-accounts) for more test users._
 | ------------------------------------------ | ------------------------------------------------------------ |
 | [Getting Started](docs/getting-started.md) | Prerequisites, install, run iOS/Android, run tests           |
 | [Auth Flow](docs/auth-flow.md)             | Architecture, modules, screen behavior, session invalidation |
+| [Error Handling](docs/error-handling.md)   | Error Boundary strategy and unexpected crash handling       |
 
 ## License
 

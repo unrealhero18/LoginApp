@@ -3,10 +3,10 @@ import { Pressable } from 'react-native';
 
 import { cn } from '@/utils/styles';
 
+import { styles } from './Input.styles';
+
 import CloseIcon from '@/assets/icons/close.svg';
 import { globalStyles } from '@/theme/styles';
-
-import { styles } from './Input.styles';
 
 type Props = {
   onClear: () => void;
