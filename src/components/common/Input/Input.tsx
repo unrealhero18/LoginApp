@@ -90,6 +90,7 @@ export const Input = forwardRef<TextInput, InputProps>(
             onFocus={handleFocus}
             onBlur={handleBlur}
             accessibilityLabel={label}
+            accessibilityHint={errorMessage}
             {...rest}
           />
 

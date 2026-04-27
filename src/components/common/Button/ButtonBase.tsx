@@ -1,12 +1,22 @@
 import React from 'react';
-import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
-
-import { cn } from '@/utils/styles';
+import {
+  AccessibilityRole,
+  AccessibilityState,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  ViewStyle,
+} from 'react-native';
 
 import { Spacing } from '@/theme/spacing';
 import { globalStyles } from '@/theme/styles';
+import { cn } from '@/utils/styles';
 
 type Props = {
+  accessibilityHint?: string;
+  accessibilityLabel?: string;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
   children: React.ReactNode;
   disabled?: boolean;
   onPress?: () => void;
@@ -14,6 +24,10 @@ type Props = {
 };
 
 export function ButtonBase({
+  accessibilityHint,
+  accessibilityLabel,
+  accessibilityRole = 'button',
+  accessibilityState,
   children,
   disabled = false,
   onPress,
@@ -21,12 +35,19 @@ export function ButtonBase({
 }: Props) {
   return (
     <Pressable
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={{
+        disabled,
+        ...accessibilityState,
+      }}
+      disabled={disabled}
+      onPress={onPress}
       style={({ pressed }) => [
         cn([styles, globalStyles], 'base', { disabled, pressed }),
         typeof style === 'function' ? style({ pressed }) : style,
       ]}
-      onPress={onPress}
-      disabled={disabled}
     >
       {children}
     </Pressable>

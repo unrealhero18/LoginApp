@@ -9,20 +9,26 @@ import { Spacing } from '@/theme/spacing';
 import { Typography } from '@/theme/typography';
 
 type Props = {
-  title: string;
+  accessibilityHint?: string;
+  accessibilityLabel?: string;
   disabled?: boolean;
   isLoading?: boolean;
   onPress?: () => void;
+  title: string;
 };
 
 export function PrimaryButton({
-  title,
+  accessibilityHint,
+  accessibilityLabel,
   disabled = false,
   isLoading = false,
   onPress,
+  title,
 }: Props) {
   return (
     <ButtonBase
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={accessibilityLabel || title}
       disabled={disabled || isLoading}
       onPress={onPress}
       style={styles.shadow}

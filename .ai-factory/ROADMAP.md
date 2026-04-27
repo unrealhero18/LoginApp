@@ -78,7 +78,7 @@ Completed: 2026-04-25 (`feature/auth-flow`)
 ## Phase 3 — Polish & Quality
 
 - ✅ Error boundary for unexpected crashes
-- 🔲 Accessibility labels on all inputs and buttons
+- ✅ Accessibility labels on all inputs and buttons
 - ✅ Unit tests: `useLogin` mutation, `useProfile` query, `AuthProvider` state transitions (delivered in `feature/auth-flow`, 2026-04-25)
 - ✅ Form validation — per-field error messages (username length, required fields) triggered on submit (delivered 2026-04-25)
 - ✅ Offline state handling — `OfflineScreen` shown when `getMe()` fails with a network error during hydration; Reconnect button retries the session (delivered 2026-04-26)
@@ -95,3 +95,11 @@ Completed: 2026-04-25 (`feature/auth-flow`)
 - ❌ Push notifications
 - ❌ Offline optimistic queue (offline detection during hydration was delivered in Phase 3)
 - ❌ E2E smoke test: login → profile → logout flow
+
+---
+
+## Completed
+
+| Milestone | Date | Branch |
+| :--- | :--- | :--- |
+| Accessibility labels on all inputs and buttons | 2026-04-27 | `feature/accessibility-labels` |
