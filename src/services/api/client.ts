@@ -69,6 +69,14 @@ export function setOnUnauthorized(handler: (() => void) | null): void {
 }
 
 /**
+ * Resets the module-level state. Used primarily in tests to ensure isolation.
+ */
+export function resetApiState(): void {
+  accessToken = null;
+  onUnauthorized = null;
+}
+
+/**
  * A wrapper around the native fetch API that handles:
  * - JSON serialization/deserialization
  * - Common headers (Accept, Content-Type)
