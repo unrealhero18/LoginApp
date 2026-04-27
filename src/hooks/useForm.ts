@@ -45,9 +45,10 @@ export function useForm<T extends Record<string, unknown>>({
 
   const validationResult = validate?.(values) ?? {};
   const isValid = !Object.values(validationResult).some(Boolean);
-  const isComplete = Object.values(values).every(
-    v => v !== '' && v !== null && v !== undefined,
-  );
+  const isComplete = Object.values(values).every(v => {
+    if (typeof v === 'string') return v.trim().length > 0;
+    return v !== null && v !== undefined;
+  });
 
   const handleChange =
     <K extends keyof T>(name: K) =>
